@@ -55,6 +55,27 @@ export function useStageState() {
   const currentSong = songs.find((s) => s.id === currentSongId) || songs[0] || null;
   const activeSetlist = setlists.find((sl) => sl.id === activeSetlistId) || null;
 
+  // On initial mount: load from native Electron disk storage if present
+  useEffect(() => {
+    if (window.electronAPI) {
+      window.electronAPI.readStorage<Song[]>('songs', []).then((storedSongs) => {
+        if (storedSongs && storedSongs.length > 0) {
+          setSongs(storedSongs);
+        }
+      });
+      window.electronAPI.readStorage<Setlist[]>('setlists', []).then((storedSetlists) => {
+        if (storedSetlists && storedSetlists.length > 0) {
+          setSetlists(storedSetlists);
+        }
+      });
+      window.electronAPI.readStorage<Show[]>('shows', []).then((storedShows) => {
+        if (storedShows && storedShows.length > 0) {
+          setShows(storedShows);
+        }
+      });
+    }
+  }, []);
+
   // Sync to local storage / Electron storage
   useEffect(() => {
     localStorage.setItem('stagedeck_songs', JSON.stringify(songs));

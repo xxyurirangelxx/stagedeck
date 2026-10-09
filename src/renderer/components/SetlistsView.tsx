@@ -173,6 +173,18 @@ export const SetlistsView: React.FC<SetlistsViewProps> = ({
                   >
                     + Setlist
                   </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm(`Excluir a música "${song.title}" do repertório?`)) {
+                        setSongs((prev) => prev.filter((s) => s.id !== song.id));
+                      }
+                    }}
+                    className="p-1.5 rounded text-stage-muted hover:text-red-400 hover:bg-stage-panel"
+                    title="Excluir música do repertório"
+                  >
+                    <Trash2 size={13} />
+                  </button>
                 </div>
               </div>
             );

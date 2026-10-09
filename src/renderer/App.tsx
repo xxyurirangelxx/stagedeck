@@ -82,6 +82,37 @@ export const App: React.FC = () => {
     setSongs((prev) => prev.map((s) => (s.id === currentSong.id ? updatedSong : s)));
   };
 
+  // Stage Keyboard Shortcuts (Space = Play/Pause, Right/Left = Next/Prev Song)
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger transport if actively typing inside an input or textarea
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || (e.target as HTMLElement)?.isContentEditable) {
+        return;
+      }
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (isPlaying) {
+          handlePause();
+        } else {
+          handlePlay();
+        }
+      } else if (e.code === 'ArrowRight' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        handleNextSong();
+      } else if (e.code === 'ArrowLeft' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        handlePrevSong();
+      } else if (e.code === 'Escape') {
+        handleStop();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPlaying, handlePlay, handlePause, handleStop, handleNextSong, handlePrevSong]);
+
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-stage-bg text-stage-text font-sans">
       {/* 1. Global Navigation Bar */}

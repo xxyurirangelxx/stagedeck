@@ -29,6 +29,22 @@ export const LyricsChordsEditor: React.FC<LyricsChordsEditorProps> = ({
   const [rawText, setRawText] = useState<string>('');
   const [selectedLineIdx, setSelectedLineIdx] = useState<number>(0);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const importFileRef = useRef<HTMLInputElement | null>(null);
+
+  const handleImportLRC = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = (event.target?.result as string) || '';
+      const parsed = parseLyricsChordsLrc(content);
+      setLines(parsed);
+      setRawText(content);
+      onSaveLyrics(content, parsed);
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
   // Sync with currentSong
   useEffect(() => {
@@ -219,6 +235,23 @@ export const LyricsChordsEditor: React.FC<LyricsChordsEditorProps> = ({
               +1
             </button>
           </div>
+
+          <input
+            ref={importFileRef}
+            type="file"
+            accept=".lrc,.txt"
+            onChange={handleImportLRC}
+            className="hidden"
+          />
+
+          <button
+            onClick={() => importFileRef.current?.click()}
+            className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-md bg-stage-card hover:bg-stage-surface border border-stage-border text-white transition-all"
+            title="Importar arquivo .LRC ou .TXT externo"
+          >
+            <Upload size={13} className="text-emerald-400" />
+            <span>Importar LRC</span>
+          </button>
 
           <button
             onClick={handleExportLRC}
