@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Volume2, VolumeX, Upload, CheckCircle2 } from 'lucide-react';
+import { Volume2, VolumeX, Upload, CheckCircle2, Trash2 } from 'lucide-react';
 import { StemTrack, AudioRouting } from '../../shared/types';
 import { audioEngine } from '../audio/AudioEngine';
 
@@ -7,12 +7,14 @@ interface MixerStripProps {
   stem: StemTrack;
   vuLevel: number; // 0.0 to 1.0
   onUpdateStem: (updates: Partial<StemTrack>) => void;
+  onDeleteStem?: () => void;
 }
 
 export const MixerStrip: React.FC<MixerStripProps> = ({
   stem,
   vuLevel = 0,
-  onUpdateStem
+  onUpdateStem,
+  onDeleteStem
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -57,9 +59,24 @@ export const MixerStrip: React.FC<MixerStripProps> = ({
             {isInEar ? 'IN-EAR' : 'BACKING'}
           </span>
 
-          <span className="text-[9px] font-bold text-zinc-400 bg-zinc-800 px-1 py-0.2 rounded" title="Conversão Mono Obrigatória Ativa">
-            MONO
-          </span>
+          <div className="flex items-center gap-1">
+            <span className="text-[9px] font-bold text-zinc-400 bg-zinc-800 px-1 py-0.2 rounded" title="Conversão Mono Obrigatória Ativa">
+              MONO
+            </span>
+            {onDeleteStem && (
+              <button
+                onClick={() => {
+                  if (confirm(`Apagar a faixa "${stem.name}"?`)) {
+                    onDeleteStem();
+                  }
+                }}
+                className="text-zinc-500 hover:text-red-400 p-0.5 rounded hover:bg-zinc-800 transition-all"
+                title="Apagar esta faixa"
+              >
+                <Trash2 size={11} />
+              </button>
+            )}
+          </div>
         </div>
 
         <input

@@ -43,6 +43,7 @@ export const App: React.FC = () => {
     handleNextSong,
     handlePrevSong,
     handleUpdateStem,
+    handleDeleteStem,
     handleSendAlert,
     handleClearAlert,
     handleTranspose,
@@ -158,6 +159,7 @@ export const App: React.FC = () => {
             activeAlert={activeAlert}
             stageConnectedCount={stageConnectedCount}
             onUpdateStem={handleUpdateStem}
+            onDeleteStem={handleDeleteStem}
             onSelectSong={handleSelectSong}
             onSendAlert={handleSendAlert}
             onClearAlert={handleClearAlert}
@@ -169,6 +171,7 @@ export const App: React.FC = () => {
             currentSong={currentSong}
             vuMeters={vuMeters}
             onUpdateStem={handleUpdateStem}
+            onDeleteStem={handleDeleteStem}
             onAddStem={handleAddStem}
           />
         )}

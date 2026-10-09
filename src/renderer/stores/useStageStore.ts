@@ -262,6 +262,14 @@ export function useStageState() {
     setSongs((prev) => prev.map((s) => (s.id === currentSong.id ? updatedSong : s)));
   }, [currentSong]);
 
+  const handleDeleteStem = useCallback((stemId: string) => {
+    if (!currentSong) return;
+    audioEngine.removeTrack(stemId);
+    const updatedStems = currentSong.stems.filter((st) => st.id !== stemId);
+    const updatedSong = { ...currentSong, stems: updatedStems, updatedAt: Date.now() };
+    setSongs((prev) => prev.map((s) => (s.id === currentSong.id ? updatedSong : s)));
+  }, [currentSong]);
+
   // Alert system
   const handleSendAlert = useCallback((message: string, type: 'info' | 'warning' | 'urgent' = 'warning') => {
     const alert: StageAlert = {
@@ -348,6 +356,7 @@ export function useStageState() {
     handleNextSong,
     handlePrevSong,
     handleUpdateStem,
+    handleDeleteStem,
     handleSendAlert,
     handleClearAlert,
     handleTranspose,

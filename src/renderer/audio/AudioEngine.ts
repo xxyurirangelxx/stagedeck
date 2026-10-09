@@ -308,6 +308,27 @@ export class StageAudioEngine {
     return this.isPlaying;
   }
 
+  public removeTrack(trackId: string) {
+    const trackNode = this.tracks.get(trackId);
+    if (trackNode) {
+      if (trackNode.source) {
+        try {
+          trackNode.source.stop();
+          trackNode.source.disconnect();
+        } catch {
+          // Ignore
+        }
+      }
+      try {
+        trackNode.gainNode.disconnect();
+        trackNode.monoNode.disconnect();
+      } catch {
+        // Ignore
+      }
+      this.tracks.delete(trackId);
+    }
+  }
+
   public clearTracks() {
     this.stop();
     this.tracks.clear();

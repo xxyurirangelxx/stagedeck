@@ -15,6 +15,7 @@ interface LiveViewProps {
   activeAlert: StageAlert | null;
   stageConnectedCount: number;
   onUpdateStem: (stemId: string, updates: Partial<StemTrack>) => void;
+  onDeleteStem?: (stemId: string) => void;
   onSelectSong: (songId: string) => void;
   onSendAlert: (msg: string, type?: 'info' | 'warning' | 'urgent') => void;
   onClearAlert: () => void;
@@ -28,6 +29,7 @@ export const LiveView: React.FC<LiveViewProps> = ({
   activeAlert,
   stageConnectedCount,
   onUpdateStem,
+  onDeleteStem,
   onSelectSong,
   onSendAlert,
   onClearAlert
@@ -64,6 +66,7 @@ export const LiveView: React.FC<LiveViewProps> = ({
               stem={stem}
               vuLevel={vuMeters[stem.id] || 0}
               onUpdateStem={(updates) => onUpdateStem(stem.id, updates)}
+              onDeleteStem={onDeleteStem ? () => onDeleteStem(stem.id) : undefined}
             />
           ))}
 
@@ -76,6 +79,7 @@ export const LiveView: React.FC<LiveViewProps> = ({
               stem={stem}
               vuLevel={vuMeters[stem.id] || 0}
               onUpdateStem={(updates) => onUpdateStem(stem.id, updates)}
+              onDeleteStem={onDeleteStem ? () => onDeleteStem(stem.id) : undefined}
             />
           ))}
         </div>

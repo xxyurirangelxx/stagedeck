@@ -7,6 +7,7 @@ interface MixerPanelProps {
   currentSong: Song | null;
   vuMeters: Record<string, number>;
   onUpdateStem: (stemId: string, updates: Partial<StemTrack>) => void;
+  onDeleteStem?: (stemId: string) => void;
   onAddStem: (type: 'backing' | 'in_ear') => void;
 }
 
@@ -14,6 +15,7 @@ export const MixerPanel: React.FC<MixerPanelProps> = ({
   currentSong,
   vuMeters,
   onUpdateStem,
+  onDeleteStem,
   onAddStem
 }) => {
   if (!currentSong) {
@@ -71,6 +73,7 @@ export const MixerPanel: React.FC<MixerPanelProps> = ({
               stem={stem}
               vuLevel={vuMeters[stem.id] || 0}
               onUpdateStem={(updates) => onUpdateStem(stem.id, updates)}
+              onDeleteStem={onDeleteStem ? () => onDeleteStem(stem.id) : undefined}
             />
           ))}
         </div>
@@ -83,6 +86,7 @@ export const MixerPanel: React.FC<MixerPanelProps> = ({
               stem={stem}
               vuLevel={vuMeters[stem.id] || 0}
               onUpdateStem={(updates) => onUpdateStem(stem.id, updates)}
+              onDeleteStem={onDeleteStem ? () => onDeleteStem(stem.id) : undefined}
             />
           ))}
         </div>
