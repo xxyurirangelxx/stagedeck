@@ -59,30 +59,39 @@ export const LiveView: React.FC<LiveViewProps> = ({
         </div>
 
         {/* Horizontal scroll of live strips */}
-        <div className="flex-1 flex gap-3 overflow-x-auto pb-3 items-stretch">
-          {backingStems.map((stem) => (
-            <MixerStrip
-              key={stem.id}
-              stem={stem}
-              vuLevel={vuMeters[stem.id] || 0}
-              onUpdateStem={(updates) => onUpdateStem(stem.id, updates)}
-              onDeleteStem={onDeleteStem ? () => onDeleteStem(stem.id) : undefined}
-            />
-          ))}
+        {(!currentSong?.stems || currentSong.stems.length === 0) ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-stage-muted border border-dashed border-stage-border rounded-xl">
+            <p className="text-sm font-semibold text-white mb-1">Nenhuma stem cadastrada nesta música</p>
+            <p className="text-xs text-stage-muted">Acesse a aba "Mixer" na barra superior para adicionar backing tracks e canais de retorno.</p>
+          </div>
+        ) : (
+          <div className="flex-1 flex gap-3 overflow-x-auto pb-3 items-stretch">
+            {backingStems.map((stem) => (
+              <MixerStrip
+                key={stem.id}
+                stem={stem}
+                vuLevel={vuMeters[stem.id] || 0}
+                onUpdateStem={(updates) => onUpdateStem(stem.id, updates)}
+                onDeleteStem={onDeleteStem ? () => onDeleteStem(stem.id) : undefined}
+              />
+            ))}
 
-          {/* Divider */}
-          <div className="w-[1px] bg-cyan-900/40 self-stretch my-2" />
+            {/* Divider only if both exist */}
+            {backingStems.length > 0 && inEarStems.length > 0 && (
+              <div className="w-[1px] bg-cyan-900/40 self-stretch my-2" />
+            )}
 
-          {inEarStems.map((stem) => (
-            <MixerStrip
-              key={stem.id}
-              stem={stem}
-              vuLevel={vuMeters[stem.id] || 0}
-              onUpdateStem={(updates) => onUpdateStem(stem.id, updates)}
-              onDeleteStem={onDeleteStem ? () => onDeleteStem(stem.id) : undefined}
-            />
-          ))}
-        </div>
+            {inEarStems.map((stem) => (
+              <MixerStrip
+                key={stem.id}
+                stem={stem}
+                vuLevel={vuMeters[stem.id] || 0}
+                onUpdateStem={(updates) => onUpdateStem(stem.id, updates)}
+                onDeleteStem={onDeleteStem ? () => onDeleteStem(stem.id) : undefined}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Right: Stage Alerts & Setlist Queue */}

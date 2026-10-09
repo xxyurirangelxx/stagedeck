@@ -41,16 +41,7 @@ export const SetlistsView: React.FC<SetlistsViewProps> = ({
       bpm: newBpm,
       timeSignature: '4/4',
       duration: 180,
-      stems: [
-        { id: `stem_${Date.now()}_1`, name: 'Bateria', type: 'backing', volume: 0.8, panRouting: 'L', muted: false, solo: false },
-        { id: `stem_${Date.now()}_2`, name: 'Baixo', type: 'backing', volume: 0.8, panRouting: 'L', muted: false, solo: false },
-        { id: `stem_${Date.now()}_3`, name: 'Guitarras', type: 'backing', volume: 0.8, panRouting: 'L', muted: false, solo: false },
-        { id: `stem_${Date.now()}_4`, name: 'Teclados', type: 'backing', volume: 0.75, panRouting: 'L', muted: false, solo: false },
-        { id: `stem_${Date.now()}_5`, name: 'Metais / FX', type: 'backing', volume: 0.7, panRouting: 'L', muted: false, solo: false },
-        { id: `stem_${Date.now()}_6`, name: 'Backing Vocals', type: 'backing', volume: 0.8, panRouting: 'L', muted: false, solo: false },
-        { id: `stem_${Date.now()}_7`, name: 'In-Ear: Click Metrônomo', type: 'in_ear', volume: 0.9, panRouting: 'R', muted: false, solo: false },
-        { id: `stem_${Date.now()}_8`, name: 'In-Ear: Guia de Voz', type: 'in_ear', volume: 0.9, panRouting: 'R', muted: false, solo: false },
-      ],
+      stems: [],
       lyricsChordsLrc: `[00:04.00] ${newKey} | [Introdução da música]
 [00:10.00] ${newKey} | Primeira estrofe...`,
       parsedLyrics: parseLyricsChordsLrc(`[00:04.00] ${newKey} | [Introdução da música]\n[00:10.00] ${newKey} | Primeira estrofe...`),

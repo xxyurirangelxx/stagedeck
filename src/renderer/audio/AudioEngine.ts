@@ -87,7 +87,8 @@ export class StageAudioEngine {
 
     // Analyser Node for live VU meters
     const analyserNode = this.ctx.createAnalyser();
-    analyserNode.fftSize = 64;
+    analyserNode.fftSize = 256;
+    analyserNode.smoothingTimeConstant = 0.25;
     const dataArray = new Uint8Array(analyserNode.frequencyBinCount);
 
     monoNode.connect(gainNode);
@@ -348,13 +349,20 @@ export class StageAudioEngine {
         const meters: Record<string, number> = {};
         for (const [id, node] of this.tracks.entries()) {
           node.analyserNode.getByteTimeDomainData(node.dataArray);
-          // Calculate peak from 128 (center)
+          let sumSquares = 0;
           let peak = 0;
           for (let i = 0; i < node.dataArray.length; i++) {
-            const val = Math.abs(node.dataArray[i] - 128);
-            if (val > peak) peak = val;
+            const normalized = (node.dataArray[i] - 128) / 128; // -1.0 to 1.0
+            const abs = Math.abs(normalized);
+            if (abs > peak) peak = abs;
+            sumSquares += normalized * normalized;
           }
-          meters[id] = peak / 128; // 0.0 to 1.0
+          const rms = Math.sqrt(sumSquares / node.dataArray.length);
+          // Perceptual sensitivity blend: RMS weighted with peak, scaled for natural meter ballistics
+          const rawEnergy = (rms * 0.75 + peak * 0.25) * 2.2;
+          // Log-like perceptual response curve (gamma = 0.65) so quiet/mid dynamics bounce noticeably
+          const meterLevel = Math.min(1.0, Math.max(0, Math.pow(rawEnergy, 0.65)));
+          meters[id] = meterLevel;
         }
         this.onVuMeterUpdate(meters);
       }

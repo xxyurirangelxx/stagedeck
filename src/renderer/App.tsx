@@ -57,7 +57,7 @@ export const App: React.FC = () => {
       id: `stem_${Date.now()}`,
       name: type === 'backing' ? `Backing Track ${currentSong.stems.length + 1}` : 'In-Ear Monitor Extra',
       type,
-      volume: 0.8,
+      volume: 1.0,
       panRouting: type === 'backing' ? 'L' : 'R',
       muted: false,
       solo: false

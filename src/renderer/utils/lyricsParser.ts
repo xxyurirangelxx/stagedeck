@@ -123,7 +123,7 @@ export function parseLyricsChordsLrc(raw: string): LyricLine[] {
       }
 
       result.push({
-        id: `line_${i}_${Date.now()}`,
+        id: `line_${i}`,
         time: timeSec,
         chords: chordLine,
         text: textLine,
@@ -132,7 +132,7 @@ export function parseLyricsChordsLrc(raw: string): LyricLine[] {
     } else {
       // Line without timestamp (append with approx 0 or offset)
       result.push({
-        id: `line_${i}_${Date.now()}`,
+        id: `line_${i}`,
         time: result.length > 0 ? result[result.length - 1].time + 3.0 : 0,
         chords: '',
         text: line,
