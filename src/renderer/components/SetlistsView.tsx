@@ -27,10 +27,26 @@ export const SetlistsView: React.FC<SetlistsViewProps> = ({
   const [newArtist, setNewArtist] = useState('');
   const [newKey, setNewKey] = useState('C');
   const [newBpm, setNewBpm] = useState(120);
+  const [newDurationStr, setNewDurationStr] = useState('03:00');
+
+  const parseDurationInput = (str: string): number => {
+    const trimmed = str.trim();
+    if (!trimmed) return 180;
+    if (trimmed.includes(':')) {
+      const parts = trimmed.split(':');
+      const m = parseInt(parts[0], 10) || 0;
+      const s = parseInt(parts[1], 10) || 0;
+      return m * 60 + s;
+    }
+    const sec = parseInt(trimmed, 10);
+    return isNaN(sec) || sec <= 0 ? 180 : sec;
+  };
 
   const handleCreateSong = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
+
+    const parsedDur = parseDurationInput(newDurationStr);
 
     const newSong: Song = {
       id: `song_${Date.now()}`,
@@ -40,7 +56,7 @@ export const SetlistsView: React.FC<SetlistsViewProps> = ({
       currentKey: newKey,
       bpm: newBpm,
       timeSignature: '4/4',
-      duration: 180,
+      duration: parsedDur,
       stems: [],
       lyricsChordsLrc: `[00:04.00] ${newKey} | [Introdução da música]
 [00:10.00] ${newKey} | Primeira estrofe...`,
@@ -54,6 +70,7 @@ export const SetlistsView: React.FC<SetlistsViewProps> = ({
     setShowNewSongModal(false);
     setNewTitle('');
     setNewArtist('');
+    setNewDurationStr('03:00');
   };
 
   const handleAddSongToSetlist = (songId: string) => {
@@ -154,8 +171,12 @@ export const SetlistsView: React.FC<SetlistsViewProps> = ({
                     <span className="text-stage-muted font-bold">BPM:</span>
                     <span className="text-stage-amber font-bold">{song.bpm}</span>
                   </div>
-                  <div className="text-xs text-zinc-500 font-mono">
-                    {song.stems.length} stems
+                  <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-mono">
+                    <span>{song.stems.length} stems</span>
+                    <span className="text-zinc-600">•</span>
+                    <span className="text-zinc-300 font-bold">
+                      {Math.floor((song.duration || 180) / 60)}:{String(Math.floor((song.duration || 180) % 60)).padStart(2, '0')}
+                    </span>
                   </div>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleAddSongToSetlist(song.id); }}
@@ -306,7 +327,7 @@ export const SetlistsView: React.FC<SetlistsViewProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="text-xs font-bold text-stage-muted block mb-1">Tom Original</label>
                 <input
@@ -327,6 +348,16 @@ export const SetlistsView: React.FC<SetlistsViewProps> = ({
                   className="w-full bg-stage-bg border border-stage-border focus:border-stage-amber rounded-lg px-3 py-2 text-sm font-mono font-bold text-stage-amber outline-none"
                 />
               </div>
+              <div>
+                <label className="text-xs font-bold text-stage-muted block mb-1">Duração (mm:ss)</label>
+                <input
+                  type="text"
+                  value={newDurationStr}
+                  onChange={(e) => setNewDurationStr(e.target.value)}
+                  placeholder="Ex: 03:30"
+                  className="w-full bg-stage-bg border border-stage-border focus:border-stage-amber rounded-lg px-3 py-2 text-sm font-mono font-bold text-white outline-none"
+                />
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
@@ -339,9 +370,9 @@ export const SetlistsView: React.FC<SetlistsViewProps> = ({
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 rounded-lg bg-stage-amber hover:bg-amber-400 text-slate-950 text-xs font-bold"
+                className="px-4 py-2 rounded-lg bg-stage-amber hover:bg-amber-400 text-slate-950 text-xs font-bold shadow-md"
               >
-                Criar Música e Stems
+                Cadastrar Música
               </button>
             </div>
           </form>

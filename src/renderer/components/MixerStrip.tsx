@@ -48,7 +48,8 @@ export const MixerStrip: React.FC<MixerStripProps> = ({
       onUpdateStem({
         fileName: file.name,
         filePath: (file as unknown as { path?: string }).path || undefined,
-        fileUrl: URL.createObjectURL(file)
+        fileUrl: URL.createObjectURL(file),
+        duration: duration
       });
       console.log(`Faixa carregada e persistida com sucesso: ${file.name} (${duration.toFixed(1)}s)`);
     } catch (err) {
@@ -298,7 +299,12 @@ export const MixerStrip: React.FC<MixerStripProps> = ({
           {stem.fileName ? (
             <>
               <CheckCircle2 size={11} className="text-emerald-400 flex-shrink-0" />
-              <span className="truncate">{stem.fileName}</span>
+              <span className="truncate flex-1 text-left">{stem.fileName}</span>
+              {stem.duration !== undefined && stem.duration > 0 && (
+                <span className="text-[8px] font-mono text-emerald-300 bg-emerald-950/90 px-1 py-0.2 rounded border border-emerald-600/40 flex-shrink-0">
+                  {Math.floor(stem.duration / 60)}:{String(Math.floor(stem.duration % 60)).padStart(2, '0')}
+                </span>
+              )}
             </>
           ) : (
             <>

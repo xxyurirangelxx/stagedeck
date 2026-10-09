@@ -69,11 +69,6 @@ export class StageAudioEngine {
     // Use .slice(0) to avoid neutering the buffer in case caller needs to persist it
     const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer.slice(0));
 
-    // If this track is longer than current duration, update songDuration
-    if (audioBuffer.duration > this.songDuration) {
-      this.songDuration = audioBuffer.duration;
-    }
-
     // Create mono downmixing node:
     // When a stereo track enters a node with channelCount = 1 & channelInterpretation = 'speakers',
     // Web Audio performs (0.5 * L) + (0.5 * R) mono downmix.
@@ -125,8 +120,14 @@ export class StageAudioEngine {
     };
 
     this.tracks.set(track.id, loadedNode);
+    this.recalculateSongDuration();
     this.applyRouting(loadedNode);
     this.updateSoloMuteStates();
+
+    // Immediately notify UI of the true audio duration
+    if (this.onTimeUpdate) {
+      this.onTimeUpdate(this.currentOffset, this.songDuration);
+    }
 
     return audioBuffer.duration;
   }
@@ -226,9 +227,28 @@ export class StageAudioEngine {
     this.masterGain.gain.setValueAtTime(Math.max(0, Math.min(1, volume)), this.ctx.currentTime);
   }
 
+  private recalculateSongDuration() {
+    if (this.tracks.size > 0) {
+      let maxDuration = 0;
+      for (const t of this.tracks.values()) {
+        if (t.buffer && t.buffer.duration > maxDuration) {
+          maxDuration = t.buffer.duration;
+        }
+      }
+      if (maxDuration > 0) {
+        this.songDuration = maxDuration;
+      }
+    }
+  }
+
   public setSongDuration(duration: number) {
-    if (duration > 0) {
-      this.songDuration = duration;
+    // Only use manual duration if there are NO audio tracks currently loaded in memory
+    if (this.tracks.size === 0) {
+      if (duration > 0) {
+        this.songDuration = duration;
+      }
+    } else {
+      this.recalculateSongDuration();
     }
   }
 
@@ -354,6 +374,10 @@ export class StageAudioEngine {
         // Ignore
       }
       this.tracks.delete(trackId);
+      this.recalculateSongDuration();
+      if (this.onTimeUpdate) {
+        this.onTimeUpdate(this.currentOffset, this.songDuration);
+      }
     }
   }
 

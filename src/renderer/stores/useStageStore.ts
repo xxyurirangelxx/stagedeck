@@ -211,18 +211,28 @@ export function useStageState() {
   // Rehydrate audio stems for the currently active song from IndexedDB
   const hydrateSongAudio = useCallback(async (song: Song | null) => {
     if (!song) return;
-    audioEngine.setSongDuration(song.duration || 180);
 
+    let maxAudioDur = 0;
     for (const stem of song.stems) {
       try {
         const stored = await audioStorage.getStemAudio(stem.id);
         if (stored && stored.buffer) {
-          await audioEngine.loadTrackFile(stem, stored.buffer);
-          console.log(`[StageDeck] Stem "${stem.name}" restaurada com sucesso`);
+          const trackDur = await audioEngine.loadTrackFile(stem, stored.buffer);
+          if (trackDur > maxAudioDur) {
+            maxAudioDur = trackDur;
+          }
+          console.log(`[StageDeck] Stem "${stem.name}" restaurada com sucesso (${trackDur.toFixed(1)}s)`);
         }
       } catch (err) {
         console.warn(`[StageDeck] Falha ao carregar áudio da stem ${stem.id}:`, err);
       }
+    }
+
+    if (maxAudioDur > 0) {
+      setDuration(maxAudioDur);
+      setSongs((prev) => prev.map((s) => s.id === song.id ? { ...s, duration: maxAudioDur } : s));
+    } else {
+      audioEngine.setSongDuration(song.duration || 180);
     }
   }, []);
 
@@ -310,16 +320,40 @@ export function useStageState() {
       return st;
     });
 
-    const updatedSong = { ...currentSong, stems: updatedStems, updatedAt: Date.now() };
+    const engineDur = audioEngine.getDuration();
+    const maxStemDur = Math.max(0, ...updatedStems.map((s) => s.duration || 0));
+    const effectiveDur = engineDur > 0 ? engineDur : (maxStemDur > 0 ? maxStemDur : currentSong.duration);
+
+    if (effectiveDur > 0 && Math.abs(effectiveDur - duration) > 0.5) {
+      setDuration(effectiveDur);
+    }
+
+    const updatedSong = {
+      ...currentSong,
+      stems: updatedStems,
+      duration: effectiveDur > 0 ? effectiveDur : currentSong.duration,
+      updatedAt: Date.now()
+    };
     setSongs((prev) => prev.map((s) => (s.id === currentSong.id ? updatedSong : s)));
-  }, [currentSong]);
+  }, [currentSong, duration]);
 
   const handleDeleteStem = useCallback((stemId: string) => {
     if (!currentSong) return;
     audioEngine.removeTrack(stemId);
     audioStorage.deleteStemAudio(stemId);
     const updatedStems = currentSong.stems.filter((st) => st.id !== stemId);
-    const updatedSong = { ...currentSong, stems: updatedStems, updatedAt: Date.now() };
+
+    const engineDur = audioEngine.getDuration();
+    const maxStemDur = Math.max(0, ...updatedStems.map((s) => s.duration || 0));
+    const effectiveDur = engineDur > 0 ? engineDur : (maxStemDur > 0 ? maxStemDur : (currentSong.duration || 180));
+    setDuration(effectiveDur);
+
+    const updatedSong = {
+      ...currentSong,
+      stems: updatedStems,
+      duration: effectiveDur,
+      updatedAt: Date.now()
+    };
     setSongs((prev) => prev.map((s) => (s.id === currentSong.id ? updatedSong : s)));
   }, [currentSong]);
 

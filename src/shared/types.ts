@@ -5,8 +5,10 @@ export interface StemTrack {
   name: string;
   type: 'backing' | 'in_ear'; // backing track vs in-ear return (click/guide)
   fileUrl?: string;           // Blob or local file path
+  filePath?: string;
   fileName?: string;
-  volume: number;             // 0.0 to 1.0 (default 0.8)
+  duration?: number;          // Duration of audio stem in seconds
+  volume: number;             // 0.0 to 1.5
   panRouting: AudioRouting;   // 'L' = PA, 'R' = In-Ear, 'BOTH' = L+R
   muted: boolean;
   solo: boolean;
