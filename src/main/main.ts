@@ -19,7 +19,8 @@ async function createWindow() {
       contextIsolation: true,
       webSecurity: false // Allows loading local audio files seamlessly
     },
-    autoHideMenuBar: true
+    autoHideMenuBar: true,
+    icon: path.join(app.getAppPath(), 'dist/logo.png')
   });
 
   const isDev = process.env.NODE_ENV === 'development' && !app.isPackaged;

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, QrCode, Smartphone, Wifi, Copy, Check, ExternalLink } from 'lucide-react';
+import logoImg from '../assets/logo.png';
 
 interface QrModalProps {
   isOpen: boolean;
@@ -34,8 +35,12 @@ export const QrModal: React.FC<QrModalProps> = ({
       <div className="bg-stage-panel border border-stage-border rounded-2xl p-6 w-full max-w-lg shadow-2xl flex flex-col gap-5">
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-stage-border">
-          <div className="flex items-center gap-2.5">
-            <Smartphone size={20} className="text-stage-amber" />
+          <div className="flex items-center gap-3">
+            <img
+              src={logoImg}
+              alt="StageDeck"
+              className="w-10 h-10 rounded-xl object-cover border border-stage-border shadow-md"
+            />
             <div>
               <h3 className="text-sm font-bold text-white uppercase font-mono tracking-wider">
                 Conectar Celular / Tablet de Palco

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Volume2, VolumeX, QrCode, Radio, Sliders, Music, FileText, ListMusic, Calendar } from 'lucide-react';
+import logoImg from '../assets/logo.png';
 
 interface NavbarProps {
   currentTab: string;
@@ -34,11 +35,25 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="h-14 bg-stage-panel border-b border-stage-border px-4 flex items-center justify-between select-none">
       {/* Brand & Live Indicator */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-stage-amber shadow-[0_0_10px_#F59E0B] animate-pulse" />
-          <span className="font-extrabold tracking-wider text-lg text-white font-mono">STAGE<span className="text-stage-amber">DECK</span></span>
+        <div className="flex items-center gap-2.5">
+          <div className="relative flex items-center justify-center">
+            <img
+              src={logoImg}
+              alt="StageDeck Logo"
+              className="w-9 h-9 rounded-lg object-cover border border-stage-border shadow-[0_0_12px_rgba(245,158,11,0.25)] ring-1 ring-cyan-500/20"
+            />
+            <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-stage-amber border-2 border-stage-panel shadow-[0_0_8px_#F59E0B] animate-pulse" />
+          </div>
+          <div className="flex flex-col">
+            <span className="font-extrabold tracking-wider text-base leading-none text-white font-mono">
+              STAGE<span className="text-stage-amber">DECK</span>
+            </span>
+            <span className="text-[9px] font-mono tracking-widest text-cyan-400 font-bold uppercase mt-0.5">
+              LIVE SYSTEM
+            </span>
+          </div>
         </div>
-        <span className="text-[11px] font-semibold bg-stage-card text-stage-muted px-2 py-0.5 rounded border border-stage-border">
+        <span className="text-[10px] font-bold bg-stage-card text-stage-muted px-2 py-0.5 rounded border border-stage-border">
           PRO CONSOLE
         </span>
       </div>
