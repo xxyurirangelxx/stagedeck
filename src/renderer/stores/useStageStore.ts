@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Song, StemTrack, Setlist, Show, StageAlert, StageSyncPayload, AudioRouting } from '../../shared/types';
 import { audioEngine } from '../audio/AudioEngine';
+import { audioStorage } from '../audio/audioStorage';
 import { INITIAL_DEMO_SONGS, INITIAL_DEMO_SETLISTS, INITIAL_DEMO_SHOWS } from '../mockData';
 import { parseLyricsChordsLrc, transposeChordLine, serializeLyricsToLrc } from '../utils/lyricsParser';
 
@@ -207,33 +208,84 @@ export function useStageState() {
     broadcastStageState(seconds, duration);
   }, [duration, broadcastStageState]);
 
-  // Setlist navigation
+  // Rehydrate audio stems for the currently active song from IndexedDB
+  const hydrateSongAudio = useCallback(async (song: Song | null) => {
+    if (!song) return;
+    audioEngine.setSongDuration(song.duration || 180);
+
+    for (const stem of song.stems) {
+      try {
+        const stored = await audioStorage.getStemAudio(stem.id);
+        if (stored && stored.buffer) {
+          await audioEngine.loadTrackFile(stem, stored.buffer);
+          console.log(`[StageDeck] Stem "${stem.name}" restaurada com sucesso`);
+        }
+      } catch (err) {
+        console.warn(`[StageDeck] Falha ao carregar áudio da stem ${stem.id}:`, err);
+      }
+    }
+  }, []);
+
+  // Hydrate on initial mount or when currentSong changes
+  useEffect(() => {
+    if (currentSong) {
+      hydrateSongAudio(currentSong);
+    }
+  }, [currentSongId]); // re-run only when changing song ID
+
+  // Setlist & Catalog navigation
   const handleSelectSong = useCallback((songId: string) => {
     handleStop();
     setCurrentSongId(songId);
     const targetSong = songs.find((s) => s.id === songId);
     if (targetSong) {
-      setDuration(targetSong.duration || 180);
+      const songDur = targetSong.duration || 180;
+      setDuration(songDur);
+      audioEngine.clearTracks(true);
+      audioEngine.setSongDuration(songDur);
+      hydrateSongAudio(targetSong);
     }
-  }, [songs, handleStop]);
+  }, [songs, handleStop, hydrateSongAudio]);
 
   const handleNextSong = useCallback(() => {
-    if (!activeSetlist || !currentSong) return;
-    const idx = activeSetlist.items.findIndex((item) => item.songId === currentSong.id);
-    if (idx !== -1 && idx + 1 < activeSetlist.items.length) {
-      const nextId = activeSetlist.items[idx + 1].songId;
-      handleSelectSong(nextId);
+    if (!currentSong) return;
+    // 1. If inside an active setlist, advance along setlist items
+    if (activeSetlist && activeSetlist.items.length > 0) {
+      const idx = activeSetlist.items.findIndex((item) => item.songId === currentSong.id);
+      if (idx !== -1 && idx + 1 < activeSetlist.items.length) {
+        const nextId = activeSetlist.items[idx + 1].songId;
+        handleSelectSong(nextId);
+        return;
+      }
     }
-  }, [activeSetlist, currentSong, handleSelectSong]);
+    // 2. Fallback: cycle through full repertoire catalog
+    const catalogIdx = songs.findIndex((s) => s.id === currentSong.id);
+    if (catalogIdx !== -1 && catalogIdx + 1 < songs.length) {
+      handleSelectSong(songs[catalogIdx + 1].id);
+    } else if (songs.length > 0 && catalogIdx === songs.length - 1) {
+      handleSelectSong(songs[0].id); // loop back to first song
+    }
+  }, [activeSetlist, currentSong, songs, handleSelectSong]);
 
   const handlePrevSong = useCallback(() => {
-    if (!activeSetlist || !currentSong) return;
-    const idx = activeSetlist.items.findIndex((item) => item.songId === currentSong.id);
-    if (idx > 0) {
-      const prevId = activeSetlist.items[idx - 1].songId;
-      handleSelectSong(prevId);
+    if (!currentSong) return;
+    // 1. If inside an active setlist, go back along setlist items
+    if (activeSetlist && activeSetlist.items.length > 0) {
+      const idx = activeSetlist.items.findIndex((item) => item.songId === currentSong.id);
+      if (idx > 0) {
+        const prevId = activeSetlist.items[idx - 1].songId;
+        handleSelectSong(prevId);
+        return;
+      }
     }
-  }, [activeSetlist, currentSong, handleSelectSong]);
+    // 2. Fallback: cycle back through full repertoire catalog
+    const catalogIdx = songs.findIndex((s) => s.id === currentSong.id);
+    if (catalogIdx > 0) {
+      handleSelectSong(songs[catalogIdx - 1].id);
+    } else if (songs.length > 0 && catalogIdx === 0) {
+      handleSelectSong(songs[songs.length - 1].id); // wrap to last song
+    }
+  }, [activeSetlist, currentSong, songs, handleSelectSong]);
 
   // Stem Controls
   const handleUpdateStem = useCallback((stemId: string, updates: Partial<StemTrack>) => {
@@ -265,6 +317,7 @@ export function useStageState() {
   const handleDeleteStem = useCallback((stemId: string) => {
     if (!currentSong) return;
     audioEngine.removeTrack(stemId);
+    audioStorage.deleteStemAudio(stemId);
     const updatedStems = currentSong.stems.filter((st) => st.id !== stemId);
     const updatedSong = { ...currentSong, stems: updatedStems, updatedAt: Date.now() };
     setSongs((prev) => prev.map((s) => (s.id === currentSong.id ? updatedSong : s)));

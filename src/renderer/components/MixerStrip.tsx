@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { Upload, CheckCircle2, Trash2, RotateCcw } from 'lucide-react';
 import { StemTrack } from '../../shared/types';
 import { audioEngine } from '../audio/AudioEngine';
+import { audioStorage } from '../audio/audioStorage';
 
 interface MixerStripProps {
   stem: StemTrack;
@@ -39,12 +40,17 @@ export const MixerStrip: React.FC<MixerStripProps> = ({
     if (!file) return;
 
     try {
-      const duration = await audioEngine.loadTrackFile(stem, file);
+      const arrayBuffer = await file.arrayBuffer();
+      // Permanently store audio in IndexedDB so it persists across app reboots
+      await audioStorage.saveStemAudio(stem.id, file.name, arrayBuffer);
+
+      const duration = await audioEngine.loadTrackFile(stem, arrayBuffer);
       onUpdateStem({
         fileName: file.name,
+        filePath: (file as unknown as { path?: string }).path || undefined,
         fileUrl: URL.createObjectURL(file)
       });
-      console.log(`Faixa carregada com sucesso: ${file.name} (${duration.toFixed(1)}s)`);
+      console.log(`Faixa carregada e persistida com sucesso: ${file.name} (${duration.toFixed(1)}s)`);
     } catch (err) {
       alert(`Erro ao decodificar arquivo de áudio: ${err}`);
     }

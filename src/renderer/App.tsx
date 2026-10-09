@@ -131,6 +131,7 @@ export const App: React.FC = () => {
       {/* 2. Global Audio Transport Bar (Always accessible for live sound tech) */}
       <TransportBar
         currentSong={currentSong}
+        songs={songs}
         isPlaying={isPlaying}
         currentTime={currentTime}
         duration={duration}
@@ -143,6 +144,7 @@ export const App: React.FC = () => {
         onPrev={handlePrevSong}
         onNext={handleNextSong}
         onTranspose={handleTranspose}
+        onSelectSong={handleSelectSong}
       />
 
       {/* 3. Main Content Area */}

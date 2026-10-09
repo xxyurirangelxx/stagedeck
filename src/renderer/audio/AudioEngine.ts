@@ -66,7 +66,8 @@ export class StageAudioEngine {
     }
 
     // Decode audio data (native Chromium supports WAV, FLAC, M4A/AAC, MP3)
-    const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer);
+    // Use .slice(0) to avoid neutering the buffer in case caller needs to persist it
+    const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer.slice(0));
 
     // If this track is longer than current duration, update songDuration
     if (audioBuffer.duration > this.songDuration) {
@@ -93,6 +94,21 @@ export class StageAudioEngine {
 
     monoNode.connect(gainNode);
     gainNode.connect(analyserNode);
+
+    // Clean up existing track nodes if reloaded
+    const existing = this.tracks.get(track.id);
+    if (existing) {
+      if (existing.source) {
+        try {
+          existing.source.stop();
+          existing.source.disconnect();
+        } catch {}
+      }
+      try {
+        existing.gainNode.disconnect();
+        existing.monoNode.disconnect();
+      } catch {}
+    }
 
     const loadedNode: LoadedTrackNode = {
       trackId: track.id,
@@ -210,11 +226,22 @@ export class StageAudioEngine {
     this.masterGain.gain.setValueAtTime(Math.max(0, Math.min(1, volume)), this.ctx.currentTime);
   }
 
+  public setSongDuration(duration: number) {
+    if (duration > 0) {
+      this.songDuration = duration;
+    }
+  }
+
   public play() {
     this.initContextIfNeeded();
-    if (!this.ctx || this.tracks.size === 0) return;
+    if (!this.ctx) return;
 
     if (this.isPlaying) return;
+
+    // Ensure valid duration for master transport clock
+    if (this.songDuration <= 0) {
+      this.songDuration = 180;
+    }
 
     // Start all tracks at currentOffset
     const startAudioTime = this.ctx.currentTime + 0.05; // 50ms buffer for lock-step sync
@@ -330,10 +357,12 @@ export class StageAudioEngine {
     }
   }
 
-  public clearTracks() {
+  public clearTracks(preserveDuration: boolean = false) {
     this.stop();
     this.tracks.clear();
-    this.songDuration = 0;
+    if (!preserveDuration) {
+      this.songDuration = 0;
+    }
   }
 
   private startTicker() {

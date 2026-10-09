@@ -36,6 +36,14 @@ export const LiveView: React.FC<LiveViewProps> = ({
 }) => {
   const backingStems = currentSong?.stems.filter((s) => s.type === 'backing') || [];
   const inEarStems = currentSong?.stems.filter((s) => s.type === 'in_ear') || [];
+  const [queueViewMode, setQueueViewMode] = React.useState<'setlist' | 'catalog'>('setlist');
+
+  const displayedList = (queueViewMode === 'setlist' && activeSetlist && activeSetlist.items.length > 0)
+    ? activeSetlist.items.map((item, idx) => {
+        const song = songs.find((s) => s.id === item.songId);
+        return song ? { ...song, queueOrder: idx + 1, queueItemId: item.id } : null;
+      }).filter(Boolean) as (Song & { queueOrder: number; queueItemId: string })[]
+    : songs.map((s, idx) => ({ ...s, queueOrder: idx + 1, queueItemId: s.id }));
 
   return (
     <div className="flex-1 flex overflow-hidden bg-stage-bg select-none">
@@ -104,47 +112,78 @@ export const LiveView: React.FC<LiveViewProps> = ({
           onClearAlert={onClearAlert}
         />
 
-        {/* Setlist Queue */}
-        <div className="flex-1 bg-stage-panel border border-stage-border rounded-xl p-3.5 flex flex-col overflow-hidden">
+        {/* Setlist & Repertoire Queue for Live Controller */}
+        <div className="flex-1 bg-stage-panel border border-stage-border rounded-xl p-3 flex flex-col overflow-hidden">
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-stage-border">
             <h4 className="text-xs font-bold text-white uppercase font-mono tracking-wider">
-              Fila do Show ({activeSetlist?.title || 'Setlist Ativo'})
+              Trocar de Música
             </h4>
+            <div className="flex items-center gap-1 bg-stage-bg p-0.5 rounded border border-stage-border">
+              <button
+                onClick={() => setQueueViewMode('setlist')}
+                className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono transition-all ${
+                  queueViewMode === 'setlist'
+                    ? 'bg-stage-amber text-slate-950 shadow-sm'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+                title="Visualizar ordem do Setlist"
+              >
+                Setlist ({activeSetlist?.items.length || 0})
+              </button>
+              <button
+                onClick={() => setQueueViewMode('catalog')}
+                className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono transition-all ${
+                  queueViewMode === 'catalog'
+                    ? 'bg-stage-amber text-slate-950 shadow-sm'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+                title="Visualizar todo o repertório cadastrado"
+              >
+                Todas ({songs.length})
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
-            {activeSetlist?.items.map((item, idx) => {
-              const song = songs.find((s) => s.id === item.songId);
-              if (!song) return null;
-              const isCurrent = song.id === currentSong?.id;
+            {displayedList.length === 0 ? (
+              <div className="p-4 text-center text-xs text-stage-muted">
+                Nenhuma música nesta lista
+              </div>
+            ) : (
+              displayedList.map((song) => {
+                const isCurrent = song.id === currentSong?.id;
 
-              return (
-                <div
-                  key={item.id}
-                  onClick={() => onSelectSong(song.id)}
-                  className={`p-2.5 rounded-lg cursor-pointer flex items-center justify-between border transition-all ${
-                    isCurrent
-                      ? 'bg-stage-card border-stage-amber text-white shadow-sm'
-                      : 'bg-stage-panel/60 border-transparent text-stage-muted hover:text-white hover:bg-stage-surface'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 truncate">
-                    <span className="font-mono text-xs font-bold text-stage-amber w-4">
-                      {idx + 1}.
-                    </span>
-                    <div className="truncate">
-                      <div className="text-xs font-bold truncate text-white">{song.title}</div>
-                      <div className="text-[10px] text-stage-muted truncate">{song.artist}</div>
+                return (
+                  <div
+                    key={song.queueItemId}
+                    onClick={() => onSelectSong(song.id)}
+                    className={`p-2.5 rounded-lg cursor-pointer flex items-center justify-between border transition-all ${
+                      isCurrent
+                        ? 'bg-stage-card border-stage-amber text-white shadow-sm ring-1 ring-amber-500/30'
+                        : 'bg-stage-panel/60 border-transparent text-stage-muted hover:text-white hover:bg-stage-surface'
+                    }`}
+                    title={`Selecionar "${song.title}"`}
+                  >
+                    <div className="flex items-center gap-2.5 truncate">
+                      <span className="font-mono text-xs font-bold text-stage-amber w-5">
+                        {song.queueOrder}.
+                      </span>
+                      <div className="truncate">
+                        <div className="text-xs font-bold truncate text-white">{song.title}</div>
+                        <div className="text-[10px] text-stage-muted truncate">{song.artist}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-[10px] font-mono font-bold text-stage-chord bg-stage-bg px-1.5 py-0.5 rounded border border-stage-border">
+                        {song.currentKey}
+                      </span>
+                      {isCurrent && <ChevronRight size={14} className="text-stage-amber" />}
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-[10px] font-mono font-bold text-stage-chord">{song.currentKey}</span>
-                    {isCurrent && <ChevronRight size={14} className="text-stage-amber" />}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
       </div>
