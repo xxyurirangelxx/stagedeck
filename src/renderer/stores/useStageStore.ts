@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Song, StemTrack, Setlist, Show, StageAlert, StageSyncPayload, AudioRouting } from '../../shared/types';
 import { audioEngine } from '../audio/AudioEngine';
 import { audioStorage } from '../audio/audioStorage';
+import { parseLyricsChordsLrc } from '../utils/lyricsParser';
 import { INITIAL_DEMO_SONGS, INITIAL_DEMO_SETLISTS, INITIAL_DEMO_SHOWS } from '../mockData';
 
 declare global {
@@ -51,6 +52,12 @@ export function useStageState() {
 
   const [stageAddresses, setStageAddresses] = useState<{ url: string; qrDataUrl: string }[]>([]);
   const [stageConnectedCount, setStageConnectedCount] = useState<number>(0);
+
+  // Generation token for async stem hydration: only the most recent hydrate call
+  // is allowed to load tracks. Prevents an in-flight hydration of the PREVIOUS
+  // song from re-injecting its stems after the user has already switched songs
+  // (which made both songs play at once and showed the old duration).
+  const hydrateTokenRef = useRef(0);
 
   const currentSong = songs.find((s) => s.id === currentSongId) || songs[0] || null;
   const activeSetlist = setlists.find((sl) => sl.id === activeSetlistId) || null;
@@ -146,7 +153,12 @@ export function useStageState() {
         title: currentSong.title,
         artist: currentSong.artist,
         bpm: currentSong.bpm,
-        parsedLyrics: currentSong.parsedLyrics || []
+        // Songs saved by older versions may lack parsedLyrics; derive from the
+        // canonical LRC so the mobile stage always shows the lyrics.
+        parsedLyrics:
+          currentSong.parsedLyrics && currentSong.parsedLyrics.length > 0
+            ? currentSong.parsedLyrics
+            : parseLyricsChordsLrc(currentSong.lyricsChordsLrc || '')
       } : null,
       nextSongTitle: nextTitle,
       alert: alert
@@ -206,16 +218,23 @@ export function useStageState() {
     broadcastStageState(seconds, duration);
   }, [duration, broadcastStageState]);
 
-  // Rehydrate audio stems for the currently active song from IndexedDB
+  // Rehydrate audio stems for the currently active song from IndexedDB.
+  // Uses a generation token: if another hydrate starts (song switched) or the
+  // active song changed while awaiting IndexedDB/decode, this call aborts
+  // without touching the audio engine or the UI.
   const hydrateSongAudio = useCallback(async (song: Song | null) => {
     if (!song) return;
+    const token = ++hydrateTokenRef.current;
 
     let maxAudioDur = 0;
     for (const stem of song.stems) {
+      if (hydrateTokenRef.current !== token) return;
       try {
         const stored = await audioStorage.getStemAudio(stem.id);
+        if (hydrateTokenRef.current !== token) return;
         if (stored && stored.buffer) {
           const trackDur = await audioEngine.loadTrackFile(stem, stored.buffer);
+          if (hydrateTokenRef.current !== token) return;
           if (trackDur > maxAudioDur) {
             maxAudioDur = trackDur;
           }
@@ -226,6 +245,7 @@ export function useStageState() {
       }
     }
 
+    if (hydrateTokenRef.current !== token) return;
     if (maxAudioDur > 0) {
       setDuration(maxAudioDur);
       setSongs((prev) => prev.map((s) => s.id === song.id ? { ...s, duration: maxAudioDur } : s));

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, cleanup } from '@testing-library/react';
 import { useStageState } from './useStageStore';
 import { audioEngine } from '../audio/AudioEngine';
+import { audioStorage } from '../audio/audioStorage';
 import type { StemTrack } from '../../shared/types';
 
 // O motor de áudio real depende de Web Audio/IndexedDB (indisponíveis no jsdom).
@@ -48,6 +49,89 @@ vi.mock('../audio/audioStorage', () => ({
     deleteStemAudio: vi.fn(),
   },
 }));
+
+describe('useStageState — troca de música sem sobreposição de áudio', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+    audioEngine.clearTracks();
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('não reinjeta o áudio da música anterior quando a troca acontece durante a hidratação, e hidrata a nova música uma única vez', async () => {
+    // Stems de A (song-demo-1) chegam do IndexedDB com atraso; as de B chegam na hora.
+    vi.mocked(audioStorage.getStemAudio).mockImplementation(async (id: string) => {
+      if (!id.startsWith('stem-2-')) {
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      return { stemId: id, fileName: `${id}.wav`, buffer: { duration: 240 } as unknown as ArrayBuffer, timestamp: 0 };
+    });
+
+    const { result } = renderHook(() => useStageState());
+
+    // A hidratação de A (song-demo-1) dispara no mount e fica em voo.
+    // Troca IMEDIATA para B enquanto a hidratação anterior ainda não terminou.
+    const songB = result.current.songs.find((s) => s.id === 'song-demo-2')!;
+    act(() => {
+      result.current.handleSelectSong(songB.id);
+    });
+
+    // Espera a hidratação de B concluir...
+    await vi.waitFor(() => {
+      const loaded = vi.mocked(audioEngine.loadTrackFile).mock.calls.map((c) => (c[0] as StemTrack).id);
+      expect(loaded.filter((id) => id.startsWith('stem-2-'))).toHaveLength(songB.stems.length);
+    });
+
+    // ...e dá tempo de qualquer hidratação órfã de A acordar do delay do IndexedDB.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 900));
+    });
+
+    const loadedIds = vi.mocked(audioEngine.loadTrackFile).mock.calls.map((c) => (c[0] as StemTrack).id);
+    // Nenhuma stem de A pode ser (re)carregada após a troca
+    expect(loadedIds.filter((id) => /^stem-\d+$/.test(id))).toEqual([]);
+    // Cada stem de B carregada exatamente uma vez (handler + efeito não duplicam)
+    expect(loadedIds.filter((id) => id.startsWith('stem-2-'))).toHaveLength(songB.stems.length);
+  });
+
+  it('broadcast do palco deriva parsedLyrics do LRC quando a música salva não tem parsedLyrics (músicas antigas)', async () => {
+    const broadcastStage = vi.fn(async (_payload?: unknown) => true);
+    (window as unknown as { electronAPI: unknown }).electronAPI = {
+      getStageInfo: vi.fn(async () => ({ addresses: [], count: 0 })),
+      broadcastStage,
+      readStorage: vi.fn(async () => null),
+      writeStorage: vi.fn(async () => true)
+    };
+
+    const { result } = renderHook(() => useStageState());
+    const loaded = result.current.currentSong!;
+    const originalLrc = loaded.lyricsChordsLrc;
+    expect(originalLrc).toBeTruthy();
+
+    // Simula música salva por versão antiga: LRC presente, parsedLyrics vazio
+    act(() => {
+      result.current.setSongs((prev) =>
+        prev.map((s) => (s.id === loaded.id ? { ...s, parsedLyrics: [] } : s))
+      );
+    });
+
+    act(() => {
+      result.current.handlePlay();
+    });
+
+    const payload = broadcastStage.mock.calls.at(-1)?.[0] as
+      | { currentSong: { parsedLyrics: unknown[]; id: string } }
+      | undefined;
+    expect(payload).toBeTruthy();
+    expect(payload!.currentSong.id).toBe(loaded.id);
+    expect(payload!.currentSong.parsedLyrics.length).toBeGreaterThan(0);
+
+    delete (window as unknown as { electronAPI?: unknown }).electronAPI;
+  });
+});
 
 describe('useStageState — handleUpdateSong (edição de músicas)', () => {
   beforeEach(() => {

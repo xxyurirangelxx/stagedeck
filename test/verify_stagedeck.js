@@ -34,6 +34,20 @@ async function runTests() {
   }
   console.log('   [SUCESSO] Parser LRC e gerador TTML validados.\n');
 
+  // Test 1b: LRC enhanced (karaokê palavra a palavra)
+  console.log('1b. Testando LRC enhanced (karaokê palavra a palavra):');
+  const enhancedLrc = `[00:12.82] G | <00:12.82>What's <00:13.42>the <00:13.72>matter`;
+  const enhancedParsed = parseLyricsChordsLrc(enhancedLrc);
+  if (!enhancedParsed[0].words || enhancedParsed[0].words.length !== 3) {
+    throw new Error('Falha no parse de LRC enhanced (words)!');
+  }
+  const enhancedSerialized = serializeLyricsToLrc(enhancedParsed);
+  if (enhancedSerialized !== enhancedLrc) {
+    throw new Error(`Falha no round-trip de LRC enhanced! Recebido: ${enhancedSerialized}`);
+  }
+  console.log('   Words: ' + enhancedParsed[0].words.map((w) => `${w.text}@${w.time}s`).join(', '));
+  console.log('   [SUCESSO] LRC enhanced round-trip validado.\n');
+
   // Test 2: Editar Música — utilitários de duração e modelo
   console.log('2. Testando Utilitários de Duração e Modelo da Música (Edição):');
 
@@ -69,10 +83,31 @@ async function runTests() {
   });
 
   console.log(`   HTTP GET /stage status: ${httpRes.statusCode}`);
-  if (httpRes.statusCode !== 200 || !httpRes.body.includes('StageDeck - Visor de Palco')) {
+  if (httpRes.statusCode !== 200 || !httpRes.body.includes('Visor de Palco')) {
     throw new Error('Falha ao servir HTML do visor de palco!');
   }
-  console.log('   [SUCESSO] HTML de palco servido com sucesso.');
+  // UI nova (identidade do app) + karaokê palavra a palavra
+  const jsRes = await new Promise((resolve, reject) => {
+    http.get('http://127.0.0.1:5052/stage/stage.js', (res) => {
+      let body = '';
+      res.on('data', (chunk) => body += chunk);
+      res.on('end', () => resolve({ statusCode: res.statusCode, body }));
+    }).on('error', reject);
+  });
+  const cssRes = await new Promise((resolve, reject) => {
+    http.get('http://127.0.0.1:5052/stage/stage.css', (res) => {
+      let body = '';
+      res.on('data', (chunk) => body += chunk);
+      res.on('end', () => resolve({ statusCode: res.statusCode, body }));
+    }).on('error', reject);
+  });
+  if (!jsRes.body.includes('updateActiveWord') || !jsRes.body.includes('class="word"')) {
+    throw new Error('Falha: stage.js sem karaokê palavra a palavra!');
+  }
+  if (!cssRes.body.includes('.word.active') || !cssRes.body.includes('#155BD0')) {
+    throw new Error('Falha: stage.css sem a identidade/karaokê novos!');
+  }
+  console.log('   [SUCESSO] HTML de palco servido com UI nova e karaokê palavra a palavra.');
 
   // Test QR Code Generation
   const qrResults = await server.getStageUrlAndQr();
@@ -102,7 +137,7 @@ async function runTests() {
           title: 'Música de Teste Ao Vivo',
           artist: 'Banda StageDeck',
           bpm: 128,
-          parsedLyrics: parsed
+          parsedLyrics: enhancedParsed
         },
         alert: {
           id: 'alert-1',
@@ -127,7 +162,11 @@ async function runTests() {
   if (receivedMessages.length === 0 || receivedMessages[0].alert?.message !== 'REPETIR REFRÃO!') {
     throw new Error('Falha na recepção do alerta via WebSocket!');
   }
-  console.log('   [SUCESSO] WebSocket de palco com teleprompter e alertas em tempo real validado.\n');
+  const receivedWords = receivedMessages[0].currentSong?.parsedLyrics?.[0]?.words;
+  if (!receivedWords || receivedWords.length !== 3) {
+    throw new Error('Falha: timing por palavra não trafegou no sync do palco!');
+  }
+  console.log('   [SUCESSO] WebSocket com karaokê palavra a palavra e alertas em tempo real validado.\n');
 
   wsClient.close();
   server.stop();

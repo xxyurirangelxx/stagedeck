@@ -14,12 +14,19 @@ export interface StemTrack {
   solo: boolean;
 }
 
+export interface LyricWord {
+  text: string;
+  time: number;               // Word start (seconds)
+  end: number;                // Word end (seconds)
+}
+
 export interface LyricLine {
   id: string;
   time: number;               // Seconds
   chords: string;             // Chord line, e.g. "G      D/F#      Em7"
   text: string;               // Lyric line, e.g. "Luz do sol que clareia o dia"
   raw?: string;
+  words?: LyricWord[];        // Word-level timing (karaoke), when available (TTML/enhanced LRC)
 }
 
 export interface Song {

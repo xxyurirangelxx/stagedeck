@@ -462,6 +462,15 @@ export const LyricsChordsEditor: React.FC<LyricsChordsEditorProps> = ({
                             ▶ Tocando agora
                           </span>
                         )}
+
+                        {(line.words?.length || 0) > 0 && (
+                          <span
+                            className="text-[10px] font-semibold text-stage-cyan bg-cyan-50 border border-cyan-200 px-2 py-0.5 rounded-full"
+                            title="Timing por palavra importado de TTML/LRC enhanced: o palco exibe karaokê palavra a palavra"
+                          >
+                            ♪ palavra a palavra
+                          </span>
+                        )}
                       </div>
 
                       {/* Line Actions */}

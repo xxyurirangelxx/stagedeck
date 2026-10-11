@@ -69,10 +69,11 @@ describe('LyricsChordsEditor — importar TTML', () => {
 
     await waitFor(() => expect(props.onSaveLyrics).toHaveBeenCalledTimes(1));
     const [lrcArg, linesArg] = props.onSaveLyrics.mock.calls[0] as [string, LyricLine[]];
-    expect(lrcArg).toContain('Hail (hail)');
-    expect(lrcArg).toContain("[00:10.27]");
+    // Import de TTML por palavra preserva o timing no LRC enhanced (karaokê)
+    expect(lrcArg).toContain('[00:10.27] <00:10.27>Hail <00:11.44>(hail)');
     expect(linesArg).toHaveLength(2);
     expect(linesArg[1].text).toBe("What's the matter with your head?");
+    expect(linesArg[1].words!.map((w) => w.text)).toEqual(["What's", 'the', 'matter', 'with', 'your', 'head?']);
     expect(linesArg[0].chords).toBe('');
   });
 

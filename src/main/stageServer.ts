@@ -151,15 +151,19 @@ export class StageLocalServer {
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>StageDeck - Visor de Palco</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>StageDeck — Visor de Palco</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap">
   <link rel="stylesheet" href="/stage/stage.css">
-  <meta name="theme-color" content="#0a0c0f">
+  <meta name="theme-color" content="#ffffff">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head>
 <body class="stage-body">
   <div id="alert-banner" class="alert-banner hidden">
-    <div class="alert-icon">⚠️</div>
+    <div class="alert-icon">⚠</div>
     <div id="alert-text" class="alert-text">ALERTA DE PALCO</div>
   </div>
 
@@ -170,24 +174,24 @@ export class StageLocalServer {
     </div>
     <div class="header-right">
       <div class="badge-item"><span class="badge-label">BPM</span><span id="song-bpm" class="badge-val">--</span></div>
-      <div class="badge-item clock"><span class="badge-label">TEMPO</span><span id="time-display" class="badge-val">00:00</span></div>
+      <div class="badge-item"><span class="badge-label">TEMPO</span><span id="time-display" class="badge-val mono">00:00</span></div>
     </div>
   </header>
 
   <div class="progress-bar-container">
-    <div id="progress-bar" class="progress-bar" style="width: 0%;"></div>
+    <div id="progress-bar" class="progress-bar"></div>
   </div>
 
   <main id="lyrics-container" class="lyrics-container">
     <div class="lyrics-placeholder">
       <div class="pulse-dot"></div>
-      <p>Conectado ao som da banda. As letras e cifras sincronizadas aparecerão aqui ao dar play.</p>
+      <p>Conectado ao som da banda.<br>Letras, cifras e karaokê sincronizados aparecem aqui ao dar play.</p>
     </div>
   </main>
 
   <footer class="stage-footer">
     <div class="next-song-box">
-      <span class="next-label">A SEGUIR:</span>
+      <span class="next-label">A SEGUIR</span>
       <span id="next-song-text" class="next-title">Fim do setlist</span>
     </div>
     <div id="conn-status" class="status-indicator online">AO VIVO</div>
@@ -200,12 +204,15 @@ export class StageLocalServer {
 
   private getStageCss(): string {
     return `
-* { box-sizing: border-box; margin: 0; padding: 0; }
+/* StageDeck stage display — Apple-light identity (matches the desktop app) */
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
 body {
-  background-color: #0A0C0F;
-  color: #F8FAFC;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: #F5F5F7;
+  color: #1D1D1F;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -213,101 +220,113 @@ body {
   -webkit-user-select: none;
 }
 
+/* ---- Alert banner ---- */
 .alert-banner {
-  background: #EF4444;
+  background: #DC2626;
   color: #FFFFFF;
   padding: 14px 18px;
-  font-size: 1.6rem;
-  font-weight: 900;
+  font-size: 1.5rem;
+  font-weight: 800;
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.6);
-  animation: pulseAlert 0.8s infinite alternate;
   z-index: 100;
   text-transform: uppercase;
   letter-spacing: 1px;
+  box-shadow: 0 4px 18px rgba(220, 38, 38, 0.35);
+  animation: pulseAlert 0.8s infinite alternate;
 }
 .alert-banner.hidden { display: none; }
 
 @keyframes pulseAlert {
-  from { background-color: #EF4444; }
+  from { background-color: #DC2626; }
   to { background-color: #B91C1C; }
 }
 
+/* ---- Header ---- */
 .stage-header {
-  background: #12151B;
-  border-bottom: 2px solid #2A3240;
-  padding: 12px 18px;
+  background: #FFFFFF;
+  border-bottom: 1px solid #D2D2D7;
+  padding: 14px 18px calc(14px + env(safe-area-inset-top, 0px) * 0);
+  padding-top: max(14px, env(safe-area-inset-top, 0px));
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
 }
 
 .title {
-  font-size: 1.45rem;
+  font-size: 1.4rem;
   font-weight: 800;
-  color: #FFFFFF;
+  color: #1D1D1F;
   line-height: 1.2;
+  letter-spacing: -0.3px;
 }
 
 .artist {
   font-size: 0.95rem;
-  color: #94A3B8;
+  color: #6E6E73;
   margin-top: 3px;
+  font-weight: 500;
 }
 
 .header-right {
   display: flex;
-  gap: 12px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .badge-item {
-  background: #181D24;
-  border: 1px solid #2A3240;
-  border-radius: 6px;
-  padding: 4px 10px;
+  background: #F5F5F7;
+  border: 1px solid #D2D2D7;
+  border-radius: 14px;
+  padding: 5px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 52px;
+  min-width: 58px;
 }
 
 .badge-label {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 700;
-  color: #64748B;
-  letter-spacing: 0.5px;
+  color: #6E6E73;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
 }
 
 .badge-val {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 800;
-  color: #F59E0B;
-  font-family: monospace;
+  color: #155BD0;
+  line-height: 1.2;
 }
 
-.clock .badge-val {
-  color: #38BDF8;
+.badge-val.mono {
+  font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color: #0E7490;
 }
 
+/* ---- Progress ---- */
 .progress-bar-container {
-  height: 4px;
-  background: #181D24;
+  height: 3px;
+  background: #E9E9EE;
   width: 100%;
 }
 .progress-bar {
   height: 100%;
-  background: #F59E0B;
+  width: 0%;
+  background: #155BD0;
   transition: width 0.2s linear;
 }
 
+/* ---- Lyrics ---- */
 .lyrics-container {
   flex: 1;
   overflow-y: auto;
-  padding: 24px 18px 80px 18px;
+  padding: 20px 16px 90px 16px;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
 }
@@ -319,17 +338,18 @@ body {
   justify-content: center;
   height: 100%;
   text-align: center;
-  color: #64748B;
+  color: #6E6E73;
   gap: 16px;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
+  line-height: 1.5;
 }
 
 .pulse-dot {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: #10B981;
-  box-shadow: 0 0 12px #10B981;
+  background: #16A34A;
+  box-shadow: 0 0 12px rgba(22, 163, 74, 0.6);
   animation: pulseDot 2s infinite;
 }
 
@@ -340,88 +360,121 @@ body {
 
 .lyric-item {
   padding: 14px 16px;
-  margin-bottom: 12px;
-  border-radius: 10px;
-  background: transparent;
-  transition: all 0.25s ease;
-  border-left: 4px solid transparent;
+  margin-bottom: 10px;
+  border-radius: 18px;
+  background: #FFFFFF;
+  border: 1px solid #D2D2D7;
+  transition: background-color 0.25s ease, border-color 0.25s ease, opacity 0.25s ease, transform 0.25s ease;
 }
 
 .lyric-item.past {
-  opacity: 0.35;
+  opacity: 0.45;
+  border-color: transparent;
 }
 
 .lyric-item.current {
   opacity: 1;
-  background: #181D24;
-  border-left: 5px solid #F59E0B;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
-  transform: scale(1.02);
+  background: #EAF1FC;
+  border: 2px solid #155BD0;
+  padding: 13px 15px;
+  box-shadow: 0 6px 22px rgba(21, 91, 208, 0.14);
+  transform: scale(1.015);
 }
 
 .lyric-item.future {
-  opacity: 0.75;
+  opacity: 0.8;
 }
 
 .chord-row {
-  font-family: "JetBrains Mono", Consolas, monospace;
-  font-size: 1.45rem;
+  font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: #FBBF24;
-  letter-spacing: 0.5px;
+  color: #B45309;
+  letter-spacing: 0.4px;
   margin-bottom: 6px;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
+.lyric-item.current .chord-row {
+  font-size: 1.35rem;
+}
+
 .text-row {
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   font-weight: 600;
-  color: #F8FAFC;
-  line-height: 1.35;
-  letter-spacing: 0.2px;
+  color: #1D1D1F;
+  line-height: 1.4;
+  letter-spacing: 0.1px;
 }
 
 .lyric-item.current .text-row {
-  color: #FFFFFF;
-  font-size: 1.55rem;
+  font-size: 1.5rem;
   font-weight: 700;
 }
 
+/* ---- Karaoke words ---- */
+.word {
+  color: #8E8E93;
+  transition: color 0.12s ease;
+}
+
+.word.done {
+  color: #1D1D1F;
+}
+
+.word.active {
+  color: #155BD0;
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: 5px;
+  text-decoration-color: rgba(21, 91, 208, 0.45);
+}
+
+.lyric-item.current .word.done {
+  color: #1D1D1F;
+}
+
+/* ---- Footer ---- */
 .stage-footer {
-  background: #12151B;
-  border-top: 2px solid #2A3240;
-  padding: 10px 18px;
+  background: #FFFFFF;
+  border-top: 1px solid #D2D2D7;
+  padding: 12px 18px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
 }
 
 .next-label {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 800;
-  color: #64748B;
-  margin-right: 6px;
+  color: #6E6E73;
+  margin-right: 8px;
+  letter-spacing: 0.8px;
 }
 .next-title {
   font-size: 0.95rem;
-  font-weight: 700;
-  color: #94A3B8;
+  font-weight: 600;
+  color: #1D1D1F;
 }
 
 .status-indicator {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
 }
 .status-indicator.online {
-  background: rgba(16, 185, 129, 0.2);
-  color: #10B981;
+  background: rgba(22, 163, 74, 0.12);
+  color: #16A34A;
 }
 .status-indicator.offline {
-  background: rgba(239, 68, 68, 0.2);
-  color: #EF4444;
+  background: rgba(220, 38, 38, 0.12);
+  color: #DC2626;
 }
 `;
   }
@@ -432,6 +485,8 @@ let ws = null;
 let currentLyrics = [];
 let currentSongId = null;
 let activeAlertTimer = null;
+let lastActiveIdx = -1;
+let lastWordKey = '';
 
 // Request Screen Wake Lock
 async function requestWakeLock() {
@@ -473,7 +528,7 @@ function connectWebSocket() {
 
   ws.onclose = () => {
     if (statusEl) {
-      statusEl.textContent = 'DESCONECTADO';
+      statusEl.textContent = 'RECONECTANDO';
       statusEl.className = 'status-indicator offline';
     }
     setTimeout(connectWebSocket, 1500);
@@ -494,10 +549,10 @@ function connectWebSocket() {
 }
 
 function handleMessage(data) {
-  // 1. Alert Banner
-  if (data.alert) {
+  // 1. Alert banner: any payload without an active alert clears the banner
+  if (data.alert && data.alert.message) {
     showAlert(data.alert.message);
-  } else if (data.type === 'ALERT' && data.alert === null) {
+  } else {
     hideAlert();
   }
 
@@ -508,9 +563,12 @@ function handleMessage(data) {
     document.getElementById('song-artist').textContent = s.artist || '';
     document.getElementById('song-bpm').textContent = s.bpm ? String(s.bpm) : '--';
 
-    if (currentSongId !== s.id || currentLyrics.length !== (s.parsedLyrics || []).length) {
+    const lyrics = s.parsedLyrics || [];
+    if (currentSongId !== s.id || currentLyrics.length !== lyrics.length) {
       currentSongId = s.id;
-      currentLyrics = s.parsedLyrics || [];
+      currentLyrics = lyrics;
+      lastActiveIdx = -1;
+      lastWordKey = '';
       renderLyrics(currentLyrics);
     }
   }
@@ -540,11 +598,12 @@ function showAlert(message) {
   if (activeAlertTimer) clearTimeout(activeAlertTimer);
   activeAlertTimer = setTimeout(() => {
     hideAlert();
-  }, 10000);
+  }, 12000);
 }
 
 function hideAlert() {
   const banner = document.getElementById('alert-banner');
+  if (activeAlertTimer) { clearTimeout(activeAlertTimer); activeAlertTimer = null; }
   banner.classList.add('hidden');
 }
 
@@ -556,9 +615,18 @@ function renderLyrics(lines) {
   }
 
   container.innerHTML = lines.map((l, idx) => {
+    let textHtml;
+    if (l.words && l.words.length > 0) {
+      // Karaoke: one span per word; whitespace between spans separates words
+      textHtml = l.words.map((w) =>
+        '<span class="word" data-time="' + w.time + '" data-end="' + (w.end || w.time) + '">' + escapeHtml(w.text) + '</span>'
+      ).join(' ');
+    } else {
+      textHtml = escapeHtml(l.text || (l.chords ? '' : '...'));
+    }
     return '<div class="lyric-item future" id="lyric-' + idx + '" data-time="' + l.time + '">' +
       (l.chords ? '<div class="chord-row">' + escapeHtml(l.chords) + '</div>' : '') +
-      '<div class="text-row">' + escapeHtml(l.text || (l.chords ? '' : '...')) + '</div>' +
+      '<div class="text-row">' + textHtml + '</div>' +
       '</div>';
   }).join('');
 }
@@ -567,7 +635,6 @@ function escapeHtml(text) {
   return (text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-let lastActiveIdx = -1;
 function updateActiveLyric(currentTime) {
   if (!currentLyrics || currentLyrics.length === 0) return;
 
@@ -580,20 +647,68 @@ function updateActiveLyric(currentTime) {
     }
   }
 
-  if (activeIdx === lastActiveIdx) return;
-  lastActiveIdx = activeIdx;
+  if (activeIdx !== lastActiveIdx) {
+    lastActiveIdx = activeIdx;
 
-  const items = document.querySelectorAll('.lyric-item');
-  items.forEach((item, idx) => {
-    if (idx < activeIdx) {
-      item.className = 'lyric-item past';
-    } else if (idx === activeIdx) {
-      item.className = 'lyric-item current';
-      // Auto-scroll to center
-      item.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    } else {
-      item.className = 'lyric-item future';
+    const items = document.querySelectorAll('.lyric-item');
+    items.forEach((item, idx) => {
+      if (idx < activeIdx) {
+        item.className = 'lyric-item past';
+      } else if (idx === activeIdx) {
+        item.className = 'lyric-item current';
+        // Auto-scroll to center
+        item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        item.className = 'lyric-item future';
+      }
+    });
+    lastWordKey = '';
+  }
+
+  updateActiveWord(activeIdx, currentTime);
+}
+
+function updateActiveWord(lineIdx, currentTime) {
+  const line = currentLyrics[lineIdx];
+  if (!line || !line.words || line.words.length === 0) {
+    if (lastWordKey) {
+      clearWordStates();
+      lastWordKey = '';
     }
+    return;
+  }
+
+  // Active word = last word whose start time already passed
+  let wordIdx = -1;
+  for (let i = 0; i < line.words.length; i++) {
+    if (currentTime >= line.words[i].time) {
+      wordIdx = i;
+    } else {
+      break;
+    }
+  }
+
+  const key = lineIdx + ':' + wordIdx;
+  if (key === lastWordKey) return;
+  lastWordKey = key;
+
+  const item = document.getElementById('lyric-' + lineIdx);
+  if (!item) return;
+  const wordEls = item.querySelectorAll('.word');
+  wordEls.forEach((el, i) => {
+    if (i < wordIdx) {
+      el.className = 'word done';
+    } else if (i === wordIdx) {
+      el.className = 'word active';
+    } else {
+      el.className = 'word';
+    }
+  });
+}
+
+function clearWordStates() {
+  document.querySelectorAll('.word.active, .word.done').forEach((el) => {
+    el.className = 'word';
   });
 }
 

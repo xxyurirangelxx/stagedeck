@@ -124,6 +124,19 @@ export class StageAudioEngine {
     this.applyRouting(loadedNode);
     this.updateSoloMuteStates();
 
+    // Late join: when a track arrives while playback is already running (e.g. a
+    // song's stems are still hydrating from IndexedDB when the user hits play),
+    // start it immediately at the current transport position so it joins in sync
+    // instead of staying silent until the next play/pause cycle.
+    if (this.isPlaying && this.ctx) {
+      const source = this.ctx.createBufferSource();
+      source.buffer = loadedNode.buffer;
+      source.connect(loadedNode.monoNode);
+      const startAudioTime = this.ctx.currentTime + 0.05;
+      source.start(startAudioTime, this.getCurrentTime());
+      loadedNode.source = source;
+    }
+
     // Immediately notify UI of the true audio duration
     if (this.onTimeUpdate) {
       this.onTimeUpdate(this.currentOffset, this.songDuration);

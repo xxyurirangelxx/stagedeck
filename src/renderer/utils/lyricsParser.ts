@@ -1,4 +1,4 @@
-import { LyricLine } from '../../shared/types';
+import { LyricLine, LyricWord } from '../../shared/types';
 
 export function formatTimeLrc(seconds: number): string {
   const mins = Math.floor(seconds / 60);
@@ -28,6 +28,55 @@ export function parseTimeToSeconds(timeStr: string): number {
     return mins * 60 + secs;
   }
   return 0;
+}
+
+// --- Word-level (karaoke) helpers -----------------------------------------
+
+const WORD_TAG_REGEX = /<(\d{1,2}:\d{2}(?:[.,]\d{1,3})?)>/g;
+
+/** Word tags are only kept when they still match the (possibly edited) line text. */
+function wordsAreConsistent(line: LyricLine): boolean {
+  if (!line.words || line.words.length === 0) return false;
+  const fromWords = line.words.map((w) => w.text).join(' ').replace(/\s+/g, ' ').trim();
+  const fromText = (line.text || '').replace(/\s+/g, ' ').trim();
+  return fromWords.length > 0 && fromWords === fromText;
+}
+
+function formatWordTag(seconds: number): string {
+  const totalMs = Math.round(seconds * 1000);
+  const mm = Math.floor(totalMs / 60000);
+  const ss = Math.floor((totalMs % 60000) / 1000);
+  const cs = Math.floor((totalMs % 1000) / 10);
+  return `<${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}.${String(cs).padStart(2, '0')}>`;
+}
+
+function formatTtmlTime(seconds: number): string {
+  const totalMs = Math.round(seconds * 1000);
+  const mm = Math.floor(totalMs / 60000);
+  const ss = Math.floor((totalMs % 60000) / 1000);
+  const ms = totalMs % 1000;
+  return `00:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
+}
+
+/** Extract enhanced-LRC word tags (e.g. "<00:12.82>What's <00:13.42>the") from a text chunk. */
+function extractWordTiming(textLine: string): { text: string; words?: LyricWord[] } {
+  WORD_TAG_REGEX.lastIndex = 0;
+  if (!WORD_TAG_REGEX.test(textLine)) return { text: textLine };
+
+  const re = /<(\d{1,2}:\d{2}(?:[.,]\d{1,3})?)>([^<]*)/g;
+  const words: LyricWord[] = [];
+  let wMatch: RegExpExecArray | null;
+  while ((wMatch = re.exec(textLine)) !== null) {
+    const wText = wMatch[2].replace(/\s+/g, ' ').trim();
+    if (wText) {
+      words.push({ text: wText, time: parseTimeToSeconds(wMatch[1]), end: 0 });
+    }
+  }
+  for (let wi = 0; wi < words.length; wi++) {
+    words[wi].end = wi + 1 < words.length ? words[wi + 1].time : words[wi].time + 2;
+  }
+  const cleanText = textLine.replace(/<\d{1,2}:\d{2}(?:[.,]\d{1,3})?>/g, '').replace(/\s+/g, ' ').trim();
+  return { text: cleanText, words: words.length > 0 ? words : undefined };
 }
 
 export function parseLyricsChordsLrc(raw: string): LyricLine[] {
@@ -88,12 +137,17 @@ export function parseLyricsChordsLrc(raw: string): LyricLine[] {
         }
       }
 
+      // Enhanced LRC: word tags like <00:12.82>Word (karaoke)
+      const timing = extractWordTiming(textLine);
+      textLine = timing.text;
+
       result.push({
         id: `line_${i}`,
         time: timeSec,
         chords: chordLine,
         text: textLine,
-        raw: line
+        raw: line,
+        ...(timing.words ? { words: timing.words } : {})
       });
     } else {
       // Line without timestamp (append with approx 0 or offset)
@@ -115,6 +169,13 @@ export function serializeLyricsToLrc(lines: LyricLine[]): string {
   return lines
     .map((l) => {
       const timeTag = formatTimeLrc(l.time);
+
+      if (wordsAreConsistent(l)) {
+        const wordPart = l.words!.map((w) => `${formatWordTag(w.time)}${w.text}`).join(' ');
+        if (l.chords) return `${timeTag} ${l.chords} | ${wordPart}`;
+        return `${timeTag} ${wordPart}`;
+      }
+
       if (l.chords && l.text) {
         return `${timeTag} ${l.chords} | ${l.text}`;
       } else if (l.chords) {
@@ -136,19 +197,64 @@ export function parseTTML(raw: string): LyricLine[] {
   const isChordSpan = (el: Element) =>
     el.getAttribute('tts:color') !== null || el.getAttribute('tts:fontWeight') !== null;
 
-  // Walk children accumulating text (text nodes) and capturing the first chord
-  // span. Elements other than span (br, metadata...) are ignored.
-  const collect = (node: Node, out: { text: string; chords: string | null }): void => {
+  // Walk children accumulating text (text nodes), capturing the first chord span
+  // and building word-level timing. Word spans with `begin` (optionally `end`)
+  // that appear with NO text between them form a single word (syllable groups);
+  // whitespace between spans closes the current word.
+  const collect = (
+    node: Node,
+    out: {
+      text: string;
+      chords: string | null;
+      words: LyricWord[];
+      current: { text: string; time: number; end: number } | null;
+    }
+  ): void => {
     node.childNodes.forEach((child) => {
       if (child.nodeType === 3) {
         // Node.TEXT_NODE
-        out.text += child.nodeValue || '';
+        const raw = child.nodeValue || '';
+        if (/\S/.test(raw)) {
+          // Visible text between spans glues onto the current word (if any)
+          if (out.current) {
+            out.current.text += raw.replace(/\s+/g, ' ');
+          }
+        } else if (out.current) {
+          // Whitespace between spans = word boundary
+          out.words.push({
+            text: out.current.text.replace(/\s+/g, ' ').trim(),
+            time: out.current.time,
+            end: out.current.end
+          });
+          out.current = null;
+        }
+        out.text += raw;
       } else if (child.nodeType === 1 && (child as Element).localName === 'span') {
         const el = child as Element;
         if (isChordSpan(el)) {
           if (out.chords === null) out.chords = (el.textContent || '').trim();
         } else {
-          collect(el, out);
+          const begin = el.getAttribute('begin');
+          const end = el.getAttribute('end');
+          const content = el.textContent || '';
+          if (begin !== null) {
+            const beginSec = parseTimeToSeconds(begin);
+            const endSec = end !== null ? parseTimeToSeconds(end) : beginSec;
+            if (out.current) {
+              // Adjacent span without text between = same word (syllable)
+              out.current.text += content;
+              out.current.end = endSec;
+            } else {
+              out.current = { text: content, time: beginSec, end: endSec };
+            }
+            out.text += content;
+          } else {
+            // Span without timing: treat as plain inline text
+            if (out.current) {
+              out.current.text += content;
+            }
+            out.text += content;
+          }
         }
       }
     });
@@ -162,8 +268,16 @@ export function parseTTML(raw: string): LyricLine[] {
     const beginAttr = p.getAttribute('begin') || (firstSpan ? firstSpan.getAttribute('begin') : null) || '';
     const time = parseTimeToSeconds(beginAttr);
 
-    const out = { text: '', chords: null as string | null };
+    const out = { text: '', chords: null as string | null, words: [] as LyricWord[], current: null as { text: string; time: number; end: number } | null };
     collect(p, out);
+    if (out.current) {
+      out.words.push({
+        text: out.current.text.replace(/\s+/g, ' ').trim(),
+        time: out.current.time,
+        end: out.current.end
+      });
+      out.current = null;
+    }
     const text = out.text.replace(/\s+/g, ' ').trim();
 
     if (!text && !out.chords) return;
@@ -171,7 +285,8 @@ export function parseTTML(raw: string): LyricLine[] {
       id: `line_${i}`,
       time,
       chords: out.chords || '',
-      text
+      text,
+      ...(out.words.length > 0 ? { words: out.words } : {})
     });
   });
 
@@ -191,13 +306,24 @@ function escapeXml(value: string): string {
 export function exportToTTML(title: string, lines: LyricLine[]): string {
   const bodyParas = lines
     .map((l) => {
-      const totalMs = Math.round(l.time * 1000);
-      const mm = Math.floor(totalMs / 60000);
-      const ss = Math.floor((totalMs % 60000) / 1000);
-      const ms = totalMs % 1000;
-      const begin = `00:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
+      const begin = formatTtmlTime(l.time);
+
       const chordsXml = l.chords ? `<span tts:fontWeight="bold" tts:color="#FBBF24">${escapeXml(l.chords)}</span><br/>` : '';
-      return `      <p begin="${begin}">${chordsXml}${escapeXml(l.text || '')}</p>`;
+
+      let contentXml: string;
+      if (wordsAreConsistent(l)) {
+        contentXml = l.words!
+          .map((w) => `<span begin="${formatTtmlTime(w.time)}" end="${formatTtmlTime(w.end)}">${escapeXml(w.text)}</span>`)
+          .join(' ');
+      } else {
+        contentXml = escapeXml(l.text || '');
+      }
+
+      const endAttr =
+        wordsAreConsistent(l) && l.words!.length > 0
+          ? ` end="${formatTtmlTime(l.words![l.words!.length - 1].end)}"`
+          : '';
+      return `      <p begin="${begin}"${endAttr}>${chordsXml}${contentXml}</p>`;
     })
     .join('\n');
 
