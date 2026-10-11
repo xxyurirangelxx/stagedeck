@@ -413,6 +413,18 @@ body {
   font-weight: 700;
 }
 
+/* ---- Line karaoke (fallback: songs without word timing) ----
+   The active line "lights up" left-to-right following the transport clock,
+   using a text-clipped gradient. Songs WITH word spans use the word highlight
+   above instead. Past/future lines keep the solid text color. */
+.lyric-item.current .text-row.karaoke-line {
+  background-image: linear-gradient(90deg, #155BD0 0%, #155BD0 var(--fill, 0%), #8E8E93 var(--fill, 0%));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
 /* ---- Karaoke words ---- */
 .word {
   color: #8E8E93;
@@ -614,9 +626,14 @@ function renderLyrics(lines) {
     return;
   }
 
+  // End of each line (for the line-level karaoke fill): the next line's start,
+  // or a sensible window for the last line.
+  const ends = lines.map((l, i) => (i + 1 < lines.length ? lines[i + 1].time : l.time + 12));
+
   container.innerHTML = lines.map((l, idx) => {
+    const hasWords = l.words && l.words.length > 0;
     let textHtml;
-    if (l.words && l.words.length > 0) {
+    if (hasWords) {
       // Karaoke: one span per word; whitespace between spans separates words
       textHtml = l.words.map((w) =>
         '<span class="word" data-time="' + w.time + '" data-end="' + (w.end || w.time) + '">' + escapeHtml(w.text) + '</span>'
@@ -624,9 +641,10 @@ function renderLyrics(lines) {
     } else {
       textHtml = escapeHtml(l.text || (l.chords ? '' : '...'));
     }
+    const textClass = hasWords ? 'text-row' : 'text-row karaoke-line';
     return '<div class="lyric-item future" id="lyric-' + idx + '" data-time="' + l.time + '">' +
       (l.chords ? '<div class="chord-row">' + escapeHtml(l.chords) + '</div>' : '') +
-      '<div class="text-row">' + textHtml + '</div>' +
+      '<div class="' + textClass + '" data-start="' + l.time + '" data-end="' + ends[idx] + '">' + textHtml + '</div>' +
       '</div>';
   }).join('');
 }
@@ -670,40 +688,48 @@ function updateActiveLyric(currentTime) {
 
 function updateActiveWord(lineIdx, currentTime) {
   const line = currentLyrics[lineIdx];
-  if (!line || !line.words || line.words.length === 0) {
-    if (lastWordKey) {
-      clearWordStates();
-      lastWordKey = '';
+  const item = document.getElementById('lyric-' + lineIdx);
+  if (!item) return;
+
+  if (line && line.words && line.words.length > 0) {
+    // Word-by-word karaoke: active word = last word whose start time passed
+    let wordIdx = -1;
+    for (let i = 0; i < line.words.length; i++) {
+      if (currentTime >= line.words[i].time) {
+        wordIdx = i;
+      } else {
+        break;
+      }
     }
+
+    const key = lineIdx + ':' + wordIdx;
+    if (key === lastWordKey) return;
+    lastWordKey = key;
+
+    const wordEls = item.querySelectorAll('.word');
+    wordEls.forEach((el, i) => {
+      if (i < wordIdx) {
+        el.className = 'word done';
+      } else if (i === wordIdx) {
+        el.className = 'word active';
+      } else {
+        el.className = 'word';
+      }
+    });
     return;
   }
 
-  // Active word = last word whose start time already passed
-  let wordIdx = -1;
-  for (let i = 0; i < line.words.length; i++) {
-    if (currentTime >= line.words[i].time) {
-      wordIdx = i;
-    } else {
-      break;
-    }
+  // Line-level karaoke fill (no word timing available)
+  if (lastWordKey) {
+    clearWordStates();
+    lastWordKey = '';
   }
-
-  const key = lineIdx + ':' + wordIdx;
-  if (key === lastWordKey) return;
-  lastWordKey = key;
-
-  const item = document.getElementById('lyric-' + lineIdx);
-  if (!item) return;
-  const wordEls = item.querySelectorAll('.word');
-  wordEls.forEach((el, i) => {
-    if (i < wordIdx) {
-      el.className = 'word done';
-    } else if (i === wordIdx) {
-      el.className = 'word active';
-    } else {
-      el.className = 'word';
-    }
-  });
+  const tr = item.querySelector('.text-row.karaoke-line');
+  if (!tr) return;
+  const start = parseFloat(tr.getAttribute('data-start')) || 0;
+  const end = parseFloat(tr.getAttribute('data-end')) || start + 1;
+  const pct = Math.max(0, Math.min(100, ((currentTime - start) / Math.max(0.001, end - start)) * 100));
+  tr.style.setProperty('--fill', pct.toFixed(1) + '%');
 }
 
 function clearWordStates() {
