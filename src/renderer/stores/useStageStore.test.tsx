@@ -62,39 +62,48 @@ describe('useStageState — troca de música sem sobreposição de áudio', () =
   });
 
   it('não reinjeta o áudio da música anterior quando a troca acontece durante a hidratação, e hidrata a nova música uma única vez', async () => {
-    // Stems de A (song-demo-1) chegam do IndexedDB com atraso; as de B chegam na hora.
+    // A primeira stem de A (song-demo-1) chega do IndexedDB com atraso — criando a
+    // janela de corrida —; todas as demais respondem na hora para que todas as
+    // promessas assentem dentro do próprio teste (sem órfãs pós-teardown).
+    let slowCallDone = false;
     vi.mocked(audioStorage.getStemAudio).mockImplementation(async (id: string) => {
-      if (!id.startsWith('stem-2-')) {
+      if (!id.startsWith('stem-2-') && !slowCallDone) {
+        slowCallDone = true;
         await new Promise((r) => setTimeout(r, 50));
       }
       return { stemId: id, fileName: `${id}.wav`, buffer: { duration: 240 } as unknown as ArrayBuffer, timestamp: 0 };
     });
 
-    const { result } = renderHook(() => useStageState());
+    try {
+      const { result } = renderHook(() => useStageState());
 
-    // A hidratação de A (song-demo-1) dispara no mount e fica em voo.
-    // Troca IMEDIATA para B enquanto a hidratação anterior ainda não terminou.
-    const songB = result.current.songs.find((s) => s.id === 'song-demo-2')!;
-    act(() => {
-      result.current.handleSelectSong(songB.id);
-    });
+      // A hidratação de A (song-demo-1) dispara no mount e fica em voo.
+      // Troca IMEDIATA para B enquanto a hidratação anterior ainda não terminou.
+      const songB = result.current.songs.find((s) => s.id === 'song-demo-2')!;
+      act(() => {
+        result.current.handleSelectSong(songB.id);
+      });
 
-    // Espera a hidratação de B concluir...
-    await vi.waitFor(() => {
-      const loaded = vi.mocked(audioEngine.loadTrackFile).mock.calls.map((c) => (c[0] as StemTrack).id);
-      expect(loaded.filter((id) => id.startsWith('stem-2-'))).toHaveLength(songB.stems.length);
-    });
+      // Espera a hidratação de B concluir...
+      await vi.waitFor(() => {
+        const loaded = vi.mocked(audioEngine.loadTrackFile).mock.calls.map((c) => (c[0] as StemTrack).id);
+        expect(loaded.filter((id) => id.startsWith('stem-2-'))).toHaveLength(songB.stems.length);
+      });
 
-    // ...e dá tempo de qualquer hidratação órfã de A acordar do delay do IndexedDB.
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 900));
-    });
+      // ...e dá tempo de qualquer hidratação órfã de A acordar do delay do IndexedDB.
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 250));
+      });
 
-    const loadedIds = vi.mocked(audioEngine.loadTrackFile).mock.calls.map((c) => (c[0] as StemTrack).id);
-    // Nenhuma stem de A pode ser (re)carregada após a troca
-    expect(loadedIds.filter((id) => /^stem-\d+$/.test(id))).toEqual([]);
-    // Cada stem de B carregada exatamente uma vez (handler + efeito não duplicam)
-    expect(loadedIds.filter((id) => id.startsWith('stem-2-'))).toHaveLength(songB.stems.length);
+      const loadedIds = vi.mocked(audioEngine.loadTrackFile).mock.calls.map((c) => (c[0] as StemTrack).id);
+      // Nenhuma stem de A pode ser (re)carregada após a troca
+      expect(loadedIds.filter((id) => /^stem-\d+$/.test(id))).toEqual([]);
+      // Cada stem de B carregada exatamente uma vez (handler + efeito não duplicam)
+      expect(loadedIds.filter((id) => id.startsWith('stem-2-'))).toHaveLength(songB.stems.length);
+    } finally {
+      // Restaura o comportamento padrão do mock para os testes seguintes
+      vi.mocked(audioStorage.getStemAudio).mockImplementation(async () => null);
+    }
   });
 
   it('broadcast do palco deriva parsedLyrics do LRC quando a música salva não tem parsedLyrics (músicas antigas)', async () => {
