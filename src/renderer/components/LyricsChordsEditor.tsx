@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Clock, Plus, Trash2, Download, Upload, Edit3, Code, Sparkles, FileText, Music2 } from 'lucide-react';
 import { Song, LyricLine } from '../../shared/types';
-import { parseLyricsChordsLrc, serializeLyricsToLrc, exportToTTML, formatTimeLrc } from '../utils/lyricsParser';
+import { parseLyricsChordsLrc, serializeLyricsToLrc, exportToTTML, formatTimeLrc, parseTTML } from '../utils/lyricsParser';
 
 interface LyricsChordsEditorProps {
   currentSong: Song | null;
@@ -28,6 +28,7 @@ export const LyricsChordsEditor: React.FC<LyricsChordsEditorProps> = ({
   const [selectedLineIdx, setSelectedLineIdx] = useState<number>(0);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const importFileRef = useRef<HTMLInputElement | null>(null);
+  const importTtmlFileRef = useRef<HTMLInputElement | null>(null);
   const lastSongIdRef = useRef<string | null>(null);
 
   // Sync only when switching songs (preserves local edits and cursor focus while on same song)
@@ -73,6 +74,28 @@ export const LyricsChordsEditor: React.FC<LyricsChordsEditorProps> = ({
       setLines(parsed);
       setRawText(content);
       onSaveLyrics(content, parsed);
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  // "Importar TTML": converte linhas <p> (timing por linha ou por palavra) em linhas
+  // do app e salva como LRC canônico; acordes embutidos pelo próprio app são restaurados.
+  const handleImportTTML = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = (event.target?.result as string) || '';
+      const parsed = parseTTML(content);
+      if (parsed.length === 0) {
+        // TTML inválido/vazio: não toca na letra atual
+        return;
+      }
+      const newLrc = serializeLyricsToLrc(parsed);
+      setLines(parsed);
+      setRawText(newLrc);
+      onSaveLyrics(newLrc, parsed);
     };
     reader.readAsText(file);
     e.target.value = '';
@@ -270,6 +293,23 @@ export const LyricsChordsEditor: React.FC<LyricsChordsEditorProps> = ({
           >
             <Upload size={13} className="text-stage-muted" />
             <span>Importar LRC</span>
+          </button>
+
+          <input
+            ref={importTtmlFileRef}
+            type="file"
+            accept=".ttml,.xml"
+            onChange={handleImportTTML}
+            className="hidden"
+          />
+
+          <button
+            onClick={() => importTtmlFileRef.current?.click()}
+            className="flex items-center gap-1 text-[13px] font-medium px-2.5 py-1.5 rounded-full bg-white hover:bg-stage-panel border border-stage-border text-stage-text transition-colors"
+            title="Importar arquivo .TTML (letras sincronizadas, com ou sem acordes)"
+          >
+            <Upload size={13} className="text-stage-muted" />
+            <span>Importar TTML</span>
           </button>
 
           <button

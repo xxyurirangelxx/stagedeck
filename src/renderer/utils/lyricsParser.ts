@@ -13,9 +13,15 @@ export function formatTimeLrc(seconds: number): string {
 }
 
 export function parseTimeToSeconds(timeStr: string): number {
-  // matches [mm:ss.xx] or mm:ss.xx or mm:ss
+  // matches [h:mm:ss.mmm], [mm:ss.xx], mm:ss.xx, mm:ss
   const clean = timeStr.replace(/[\[\]]/g, '');
   const parts = clean.split(':');
+  if (parts.length === 3) {
+    const h = parseFloat(parts[0]) || 0;
+    const m = parseFloat(parts[1]) || 0;
+    const s = parseFloat(parts[2]) || 0;
+    return h * 3600 + m * 60 + s;
+  }
   if (parts.length === 2) {
     const mins = parseFloat(parts[0]) || 0;
     const secs = parseFloat(parts[1]) || 0;
@@ -120,15 +126,78 @@ export function serializeLyricsToLrc(lines: LyricLine[]): string {
     .join('\n');
 }
 
+export function parseTTML(raw: string): LyricLine[] {
+  if (!raw || !raw.trim()) return [];
+
+  const doc = new DOMParser().parseFromString(raw, 'text/xml');
+  if (doc.getElementsByTagName('parsererror').length > 0) return [];
+
+  // Chord spans are the ones the app itself exports: tts:color / tts:fontWeight attrs.
+  const isChordSpan = (el: Element) =>
+    el.getAttribute('tts:color') !== null || el.getAttribute('tts:fontWeight') !== null;
+
+  // Walk children accumulating text (text nodes) and capturing the first chord
+  // span. Elements other than span (br, metadata...) are ignored.
+  const collect = (node: Node, out: { text: string; chords: string | null }): void => {
+    node.childNodes.forEach((child) => {
+      if (child.nodeType === 3) {
+        // Node.TEXT_NODE
+        out.text += child.nodeValue || '';
+      } else if (child.nodeType === 1 && (child as Element).localName === 'span') {
+        const el = child as Element;
+        if (isChordSpan(el)) {
+          if (out.chords === null) out.chords = (el.textContent || '').trim();
+        } else {
+          collect(el, out);
+        }
+      }
+    });
+  };
+
+  const result: LyricLine[] = [];
+  const paragraphs = Array.from(doc.getElementsByTagName('p'));
+
+  paragraphs.forEach((p, i) => {
+    const firstSpan = p.getElementsByTagName('span')[0];
+    const beginAttr = p.getAttribute('begin') || (firstSpan ? firstSpan.getAttribute('begin') : null) || '';
+    const time = parseTimeToSeconds(beginAttr);
+
+    const out = { text: '', chords: null as string | null };
+    collect(p, out);
+    const text = out.text.replace(/\s+/g, ' ').trim();
+
+    if (!text && !out.chords) return;
+    result.push({
+      id: `line_${i}`,
+      time,
+      chords: out.chords || '',
+      text
+    });
+  });
+
+  // Sort by time
+  return result.sort((a, b) => a.time - b.time);
+}
+
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
 export function exportToTTML(title: string, lines: LyricLine[]): string {
   const bodyParas = lines
     .map((l) => {
-      const mm = Math.floor(l.time / 60);
-      const ss = Math.floor(l.time % 60);
-      const ms = Math.floor((l.time % 1) * 1000);
+      const totalMs = Math.round(l.time * 1000);
+      const mm = Math.floor(totalMs / 60000);
+      const ss = Math.floor((totalMs % 60000) / 1000);
+      const ms = totalMs % 1000;
       const begin = `00:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
-      const chordsXml = l.chords ? `<span tts:fontWeight="bold" tts:color="#FBBF24">${l.chords}</span><br/>` : '';
-      return `      <p begin="${begin}">${chordsXml}${l.text || ''}</p>`;
+      const chordsXml = l.chords ? `<span tts:fontWeight="bold" tts:color="#FBBF24">${escapeXml(l.chords)}</span><br/>` : '';
+      return `      <p begin="${begin}">${chordsXml}${escapeXml(l.text || '')}</p>`;
     })
     .join('\n');
 
@@ -136,7 +205,7 @@ export function exportToTTML(title: string, lines: LyricLine[]): string {
 <tt xml:lang="pt-BR" xmlns="http://www.w3.org/ns/ttml" xmlns:tts="http://www.w3.org/ns/ttml#styling">
   <head>
     <metadata>
-      <title>${title}</title>
+      <title>${escapeXml(title)}</title>
     </metadata>
   </head>
   <body>
