@@ -1,8 +1,29 @@
-node_modules
-dist
-dist-electron
-.stagedeck_data
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-electron/
+
+# Packaging artifacts (distribua via GitHub Releases)
+release/
+
+# Test coverage
+coverage/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
 *.log
+npm-debug.log*
+
+# OS / editor
 .DS_Store
 Thumbs.db
+Desktop.ini
+
+# Local tooling
 .shots
