@@ -26,15 +26,12 @@ export interface Song {
   id: string;
   title: string;
   artist: string;
-  originalKey: string;        // e.g. "G"
-  currentKey: string;         // e.g. "A" (after transpose)
   bpm: number;
   timeSignature: string;      // e.g. "4/4"
   duration: number;           // in seconds
   stems: StemTrack[];         // up to 8 backing + 2 in-ear
   lyricsChordsLrc: string;    // Synced format string
   parsedLyrics?: LyricLine[];
-  notes?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -82,7 +79,6 @@ export interface StageSyncPayload {
     id: string;
     title: string;
     artist: string;
-    currentKey: string;
     bpm: number;
     parsedLyrics: LyricLine[];
   } | null;

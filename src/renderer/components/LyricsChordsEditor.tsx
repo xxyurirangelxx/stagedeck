@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Clock, Plus, Trash2, Download, Upload, Edit3, Code, Sparkles, FileText, Music2 } from 'lucide-react';
 import { Song, LyricLine } from '../../shared/types';
-import { parseLyricsChordsLrc, serializeLyricsToLrc, exportToTTML, formatTimeLrc, transposeChordLine } from '../utils/lyricsParser';
+import { parseLyricsChordsLrc, serializeLyricsToLrc, exportToTTML, formatTimeLrc } from '../utils/lyricsParser';
 
 interface LyricsChordsEditorProps {
   currentSong: Song | null;
@@ -11,7 +11,6 @@ interface LyricsChordsEditorProps {
   onPause: () => void;
   onSeek: (time: number) => void;
   onSaveLyrics: (lrcString: string, parsedLines: LyricLine[]) => void;
-  onTranspose: (semitones: number) => void;
 }
 
 export const LyricsChordsEditor: React.FC<LyricsChordsEditorProps> = ({
@@ -21,8 +20,7 @@ export const LyricsChordsEditor: React.FC<LyricsChordsEditorProps> = ({
   onPlay,
   onPause,
   onSeek,
-  onSaveLyrics,
-  onTranspose
+  onSaveLyrics
 }) => {
   const [mode, setMode] = useState<'visual' | 'raw'>('visual');
   const [lines, setLines] = useState<LyricLine[]>([]);
@@ -199,23 +197,12 @@ export const LyricsChordsEditor: React.FC<LyricsChordsEditorProps> = ({
     a.click();
   };
 
-  const handleLocalTranspose = (semitones: number) => {
-    onTranspose(semitones);
-    const updated = lines.map((l) => ({
-      ...l,
-      chords: transposeChordLine(l.chords, semitones)
-    }));
-    const newLrc = serializeLyricsToLrc(updated);
-    setLines(updated);
-    setRawText(newLrc);
-  };
-
   if (!currentSong) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-stage-muted p-8">
         <Edit3 size={48} className="text-stage-borderLight mb-3" />
-        <p className="text-base font-semibold">Nenhuma música selecionada</p>
-        <p className="text-xs text-stage-muted mt-1">Selecione uma faixa no repertório para abrir o editor.</p>
+        <p className="text-base font-semibold text-stage-text">Nenhuma música selecionada</p>
+        <p className="text-xs mt-1">Selecione uma faixa no repertório para abrir o editor.</p>
       </div>
     );
   }
@@ -225,65 +212,48 @@ export const LyricsChordsEditor: React.FC<LyricsChordsEditorProps> = ({
       {/* Top Header / Action Toolbar */}
       <div className="flex items-center justify-between pb-3 border-b border-stage-border gap-2">
         <div className="flex items-center gap-3">
-          <h2 className="text-sm font-bold text-white tracking-wide uppercase font-mono">
-            Editor de Cifras e Letras — <span className="text-stage-amber">{currentSong.title}</span>
+          <h2 className="text-[15px] font-semibold text-stage-text">
+            Cifras & Letras <span className="text-stage-muted font-normal">— {currentSong.title}</span>
           </h2>
 
-          <div className="flex items-center bg-stage-panel rounded-lg p-0.5 border border-stage-border">
+          <div className="flex items-center bg-stage-panel rounded-full p-0.5 border border-stage-border">
             <button
               onClick={() => setMode('visual')}
-              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+              aria-pressed={mode === 'visual'}
+              className={`flex items-center gap-1.5 px-3 py-1 text-[13px] font-medium rounded-full transition-colors ${
                 mode === 'visual'
-                  ? 'bg-stage-surface text-white shadow-sm'
-                  : 'text-stage-muted hover:text-white'
+                  ? 'bg-white text-stage-text shadow-sm'
+                  : 'text-stage-muted hover:text-stage-text'
               }`}
             >
-              <Sparkles size={13} className="text-stage-amber" />
+              <Sparkles size={13} className={mode === 'visual' ? 'text-stage-accent' : 'text-stage-faint'} />
               <span>Modo Visual (Tap to Sync)</span>
             </button>
             <button
               onClick={() => setMode('raw')}
-              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+              aria-pressed={mode === 'raw'}
+              className={`flex items-center gap-1.5 px-3 py-1 text-[13px] font-medium rounded-full transition-colors ${
                 mode === 'raw'
-                  ? 'bg-stage-surface text-white shadow-sm'
-                  : 'text-stage-muted hover:text-white'
+                  ? 'bg-white text-stage-text shadow-sm'
+                  : 'text-stage-muted hover:text-stage-text'
               }`}
             >
-              <Code size={13} className="text-cyan-400" />
+              <Code size={13} className={mode === 'raw' ? 'text-stage-cyan' : 'text-stage-faint'} />
               <span>Texto Puro (LRC)</span>
             </button>
           </div>
         </div>
 
-        {/* Action Buttons: Add Line, Transpose, Import/Export LRC */}
+        {/* Action Buttons: Add Line, Import/Export LRC */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleAddLine()}
-            className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-md bg-stage-card hover:bg-stage-surface border border-stage-border text-emerald-300 hover:text-emerald-200 transition-all"
+            className="flex items-center gap-1 text-[13px] font-medium px-2.5 py-1.5 rounded-full bg-white hover:bg-stage-accentTint border border-stage-border hover:border-stage-accent text-stage-text transition-colors"
             title="Adicionar nova linha no final"
           >
             <Plus size={13} />
             <span>+ Nova Linha</span>
           </button>
-
-          {/* Quick Transpose in editor */}
-          <div className="flex items-center gap-1 bg-stage-panel border border-stage-border px-2 py-1 rounded-md">
-            <span className="text-[10px] font-bold text-stage-muted">TOM ({currentSong.currentKey}):</span>
-            <button
-              onClick={() => handleLocalTranspose(-1)}
-              className="text-xs px-1.5 py-0.5 rounded hover:bg-stage-surface text-stage-amber font-mono font-bold"
-              title="Transpor -1 semitom"
-            >
-              -1
-            </button>
-            <button
-              onClick={() => handleLocalTranspose(1)}
-              className="text-xs px-1.5 py-0.5 rounded hover:bg-stage-surface text-stage-amber font-mono font-bold"
-              title="Transpor +1 semitom"
-            >
-              +1
-            </button>
-          </div>
 
           <input
             ref={importFileRef}
@@ -295,28 +265,28 @@ export const LyricsChordsEditor: React.FC<LyricsChordsEditorProps> = ({
 
           <button
             onClick={() => importFileRef.current?.click()}
-            className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-md bg-stage-card hover:bg-stage-surface border border-stage-border text-white transition-all"
+            className="flex items-center gap-1 text-[13px] font-medium px-2.5 py-1.5 rounded-full bg-white hover:bg-stage-panel border border-stage-border text-stage-text transition-colors"
             title="Importar arquivo .LRC ou .TXT externo"
           >
-            <Upload size={13} className="text-emerald-400" />
+            <Upload size={13} className="text-stage-muted" />
             <span>Importar LRC</span>
           </button>
 
           <button
             onClick={handleExportLRC}
-            className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-md bg-stage-card hover:bg-stage-surface border border-stage-border text-white transition-all"
+            className="flex items-center gap-1 text-[13px] font-medium px-2.5 py-1.5 rounded-full bg-white hover:bg-stage-panel border border-stage-border text-stage-text transition-colors"
             title="Exportar arquivo .LRC sincronizado"
           >
-            <Download size={13} className="text-stage-amber" />
+            <Download size={13} className="text-stage-muted" />
             <span>Exportar LRC</span>
           </button>
 
           <button
             onClick={handleExportTTML}
-            className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-md bg-stage-card hover:bg-stage-surface border border-stage-border text-white transition-all"
+            className="flex items-center gap-1 text-[13px] font-medium px-2.5 py-1.5 rounded-full bg-white hover:bg-stage-panel border border-stage-border text-stage-text transition-colors"
             title="Exportar no padrão broadcast TTML"
           >
-            <Download size={13} className="text-cyan-400" />
+            <Download size={13} className="text-stage-muted" />
             <span>Exportar TTML</span>
           </button>
         </div>
@@ -325,66 +295,66 @@ export const LyricsChordsEditor: React.FC<LyricsChordsEditorProps> = ({
       {mode === 'visual' ? (
         <div className="flex-1 flex flex-col overflow-hidden pt-3 gap-3">
           {/* Quick "Tap to Sync" bar */}
-          <div className="bg-stage-panel border border-stage-border rounded-xl p-3 flex items-center justify-between shadow-sm">
+          <div className="bg-white border border-stage-border rounded-stage p-3 flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-3">
               <button
                 onClick={isPlaying ? onPause : onPlay}
-                className={`p-2 rounded-lg font-bold flex items-center gap-1.5 text-xs ${
+                className={`p-2 rounded-full font-semibold flex items-center gap-1.5 text-[13px] transition-colors ${
                   isPlaying
-                    ? 'bg-stage-amber text-slate-950'
-                    : 'bg-emerald-500 text-slate-950'
+                    ? 'bg-stage-panel border border-stage-border text-stage-text hover:bg-stage-surface'
+                    : 'bg-stage-accent hover:bg-stage-accentHover text-white'
                 }`}
               >
                 {isPlaying ? <Pause size={14} /> : <Play size={14} fill="currentColor" />}
                 <span>{isPlaying ? 'Pausar Áudio' : 'Ouvir e Sincronizar'}</span>
               </button>
 
-              <div className="font-mono text-xs text-stage-muted">
-                Tempo do áudio: <span className="text-stage-amber font-bold">{currentTime.toFixed(2)}s</span>
+              <div className="text-[13px] text-stage-muted tabular-nums">
+                Tempo do áudio: <span className="text-stage-accent font-semibold">{currentTime.toFixed(2)}s</span>
               </div>
             </div>
 
             <button
               onClick={handleStampCurrentTime}
               disabled={lines.length === 0}
-              className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-40 text-slate-950 px-4 py-2 rounded-lg font-extrabold text-xs tracking-wider shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
+              className="flex items-center gap-2 bg-stage-accent hover:bg-stage-accentHover disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-full font-semibold text-[13px] transition-colors"
               title="Gravar o tempo do áudio atual na linha selecionada e avançar para a próxima"
             >
               <Clock size={16} />
-              <span>MARCAR TEMPO NESSA LINHA (TAP TO SYNC)</span>
+              <span>Marcar Tempo Nessa Linha (Tap to Sync)</span>
             </button>
           </div>
 
           {/* Empty State when no lines exist */}
           {lines.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-stage-panel/40 border border-dashed border-stage-border rounded-xl text-center">
-              <Music2 size={40} className="text-stage-amber mb-3 opacity-80" />
-              <h3 className="text-base font-bold text-white mb-1">
+            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-stage-panel/40 border border-dashed border-stage-border rounded-stage text-center">
+              <Music2 size={40} className="text-stage-accent mb-3" />
+              <h3 className="text-base font-semibold text-stage-text mb-1">
                 Nenhuma letra ou cifra cadastrada ainda
               </h3>
-              <p className="text-xs text-stage-muted max-w-md mb-6 leading-relaxed">
+              <p className="text-[13px] text-stage-muted max-w-md mb-6 leading-relaxed">
                 Você pode adicionar linhas manualmente com cifras e tempos, colar a letra inteira de uma vez, ou importar um arquivo LRC pronto.
               </p>
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => handleAddLine()}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-stage-amber hover:bg-amber-400 text-slate-950 font-bold text-xs"
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-stage-accent hover:bg-stage-accentHover text-white font-semibold text-[13px] transition-colors"
                 >
                   <Plus size={14} />
                   <span>+ Adicionar Primeira Linha</span>
                 </button>
                 <button
                   onClick={() => setMode('raw')}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-stage-card hover:bg-stage-surface border border-stage-border text-white font-bold text-xs"
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-white hover:bg-stage-panel border border-stage-border text-stage-text font-medium text-[13px] transition-colors"
                 >
-                  <FileText size={14} className="text-cyan-400" />
+                  <FileText size={14} className="text-stage-cyan" />
                   <span>Colar Texto Completo</span>
                 </button>
                 <button
                   onClick={() => importFileRef.current?.click()}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-stage-card hover:bg-stage-surface border border-stage-border text-white font-bold text-xs"
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-white hover:bg-stage-panel border border-stage-border text-stage-text font-medium text-[13px] transition-colors"
                 >
-                  <Upload size={14} className="text-emerald-400" />
+                  <Upload size={14} className="text-stage-muted" />
                   <span>Importar Arquivo .LRC</span>
                 </button>
               </div>
@@ -404,12 +374,12 @@ export const LyricsChordsEditor: React.FC<LyricsChordsEditorProps> = ({
                     key={line.id || `line_${idx}`}
                     id={`editor-line-${idx}`}
                     onClick={() => setSelectedLineIdx(idx)}
-                    className={`p-3 rounded-xl border transition-all flex flex-col gap-1.5 ${
+                    className={`p-3 rounded-2xl border transition-colors flex flex-col gap-1.5 cursor-pointer ${
                       isCurrent
-                        ? 'bg-stage-panel border-stage-amber shadow-[0_0_15px_rgba(245,158,11,0.15)]'
+                        ? 'bg-stage-accentTint border-stage-accent'
                         : isSelected
-                        ? 'bg-stage-card border-stage-borderLight'
-                        : 'bg-stage-panel/60 border-stage-border hover:border-stage-borderLight'
+                        ? 'bg-stage-panel border-stage-borderLight'
+                        : 'bg-white border-stage-border hover:border-stage-borderLight'
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -417,7 +387,7 @@ export const LyricsChordsEditor: React.FC<LyricsChordsEditorProps> = ({
                       <div className="flex items-center gap-2">
                         <button
                           onClick={(e) => { e.stopPropagation(); onSeek(line.time); }}
-                          className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-stage-bg border border-stage-border hover:border-stage-amber text-stage-amber flex items-center gap-1"
+                          className="tabular-nums text-xs font-semibold px-2 py-0.5 rounded-full bg-white border border-stage-border hover:border-stage-accent text-stage-accent flex items-center gap-1"
                           title="Tocar áudio a partir deste tempo"
                         >
                           <Play size={10} fill="currentColor" />
@@ -427,14 +397,14 @@ export const LyricsChordsEditor: React.FC<LyricsChordsEditorProps> = ({
                         <div className="flex items-center gap-1">
                           <button
                             onClick={(e) => { e.stopPropagation(); handleNudgeTime(idx, -0.1); }}
-                            className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-stage-card border border-stage-border text-stage-muted hover:text-white"
+                            className="px-1.5 py-0.5 text-[11px] tabular-nums rounded-full bg-white border border-stage-border text-stage-muted hover:text-stage-text"
                             title="Voltar 0.1s"
                           >
                             -0.1s
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleNudgeTime(idx, 0.1); }}
-                            className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-stage-card border border-stage-border text-stage-muted hover:text-white"
+                            className="px-1.5 py-0.5 text-[11px] tabular-nums rounded-full bg-white border border-stage-border text-stage-muted hover:text-stage-text"
                             title="Avançar 0.1s"
                           >
                             +0.1s
@@ -442,14 +412,14 @@ export const LyricsChordsEditor: React.FC<LyricsChordsEditorProps> = ({
                         </div>
 
                         {isSelected && (
-                          <span className="text-[10px] font-bold text-cyan-400 bg-cyan-950/40 border border-cyan-800/40 px-2 py-0.2 rounded font-mono">
-                            SELECIONADA PARA SYNC
+                          <span className="text-[10px] font-semibold text-stage-accent bg-stage-accentTint border border-blue-200 px-2 py-0.2 rounded-full">
+                            Selecionada para sync
                           </span>
                         )}
 
                         {isCurrent && (
-                          <span className="text-[10px] font-black uppercase text-stage-amber tracking-wider font-mono">
-                            ▶ TOCANDO AGORA
+                          <span className="text-[10px] font-semibold uppercase text-stage-accent">
+                            ▶ Tocando agora
                           </span>
                         )}
                       </div>
@@ -458,14 +428,16 @@ export const LyricsChordsEditor: React.FC<LyricsChordsEditorProps> = ({
                       <div className="flex items-center gap-1">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleAddLine(idx); }}
-                          className="p-1 rounded text-stage-muted hover:text-emerald-400 hover:bg-stage-card"
+                          aria-label="Adicionar nova linha abaixo"
+                          className="p-1 rounded-full text-stage-muted hover:text-stage-green hover:bg-green-50"
                           title="Adicionar nova linha abaixo"
                         >
                           <Plus size={14} />
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleRemoveLine(idx); }}
-                          className="p-1 rounded text-stage-muted hover:text-red-400 hover:bg-stage-card"
+                          aria-label="Remover esta linha"
+                          className="p-1 rounded-full text-stage-muted hover:text-stage-red hover:bg-red-50"
                           title="Remover esta linha"
                         >
                           <Trash2 size={14} />
@@ -475,19 +447,19 @@ export const LyricsChordsEditor: React.FC<LyricsChordsEditorProps> = ({
 
                     {/* Chord Input */}
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-stage-chord w-12 font-mono">CIFRA:</span>
+                      <span className="text-[11px] font-medium text-stage-muted w-12">Cifra:</span>
                       <input
                         type="text"
                         value={line.chords}
                         onChange={(e) => handleUpdateLine(idx, { chords: e.target.value })}
                         placeholder="Ex: G   D/F#   Em7   C9"
-                        className="flex-1 bg-stage-bg border border-stage-border focus:border-stage-chord rounded px-2.5 py-1 text-sm font-mono font-bold text-stage-chord placeholder-amber-900/40 outline-none"
+                        className="flex-1 bg-white border border-stage-border focus:border-stage-chord rounded-xl px-2.5 py-1 text-sm font-mono font-semibold text-stage-chord placeholder-amber-700/30 outline-none"
                       />
                     </div>
 
                     {/* Lyric Text Input */}
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-stage-muted w-12 font-mono">LETRA:</span>
+                      <span className="text-[11px] font-medium text-stage-muted w-12">Letra:</span>
                       <input
                         type="text"
                         value={line.text}
@@ -499,7 +471,7 @@ export const LyricsChordsEditor: React.FC<LyricsChordsEditorProps> = ({
                           }
                         }}
                         placeholder="Letra correspondente ao tempo... (Pressione Enter para nova linha)"
-                        className="flex-1 bg-stage-bg border border-stage-border focus:border-stage-borderLight rounded px-2.5 py-1 text-sm font-medium text-white placeholder-zinc-700 outline-none"
+                        className="flex-1 bg-white border border-stage-border focus:border-stage-accent rounded-xl px-2.5 py-1 text-sm text-stage-text placeholder-stage-faint outline-none"
                       />
                     </div>
                   </div>
@@ -511,19 +483,19 @@ export const LyricsChordsEditor: React.FC<LyricsChordsEditorProps> = ({
       ) : (
         /* Raw Text / LRC mode */
         <div className="flex-1 flex flex-col pt-3 gap-3">
-          <p className="text-xs text-stage-muted">
-            Cole ou edite diretamente as tags de tempo e acordes no formato padrão LRC (ex: <code className="text-stage-amber">[00:15.50] G D/F# | Letra da música</code>).
+          <p className="text-[13px] text-stage-muted">
+            Cole ou edite diretamente as tags de tempo e acordes no formato padrão LRC (ex: <code className="text-stage-chord">[00:15.50] G D/F# | Letra da música</code>).
           </p>
           <textarea
             value={rawText}
             onChange={(e) => setRawText(e.target.value)}
-            className="flex-1 bg-stage-panel border border-stage-border focus:border-stage-amber rounded-xl p-4 font-mono text-sm text-stage-text outline-none resize-none leading-relaxed"
+            className="flex-1 bg-white border border-stage-border focus:border-stage-accent rounded-stage p-4 font-mono text-sm text-stage-text outline-none resize-none leading-relaxed"
             placeholder="[00:04.00] C   Am7 | [Contagem na guia: 1, 2, 3, 4]&#10;[00:08.50] C   Am7 | Todos os dias quando acordo..."
           />
           <div className="flex justify-end gap-2">
             <button
               onClick={handleApplyRawText}
-              className="px-4 py-2 rounded-lg bg-stage-amber hover:bg-amber-400 text-slate-950 font-bold text-xs"
+              className="px-4 py-2 rounded-full bg-stage-accent hover:bg-stage-accentHover text-white font-semibold text-[13px] transition-colors"
             >
               Aplicar e Voltar ao Modo Visual
             </button>

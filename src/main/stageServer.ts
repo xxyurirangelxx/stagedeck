@@ -169,7 +169,6 @@ export class StageLocalServer {
       <div id="song-artist" class="artist">StageDeck Live</div>
     </div>
     <div class="header-right">
-      <div class="badge-item"><span class="badge-label">TOM</span><span id="song-key" class="badge-val">--</span></div>
       <div class="badge-item"><span class="badge-label">BPM</span><span id="song-bpm" class="badge-val">--</span></div>
       <div class="badge-item clock"><span class="badge-label">TEMPO</span><span id="time-display" class="badge-val">00:00</span></div>
     </div>
@@ -507,7 +506,6 @@ function handleMessage(data) {
     const s = data.currentSong;
     document.getElementById('song-title').textContent = s.title || 'Sem título';
     document.getElementById('song-artist').textContent = s.artist || '';
-    document.getElementById('song-key').textContent = s.currentKey || '--';
     document.getElementById('song-bpm').textContent = s.bpm ? String(s.bpm) : '--';
 
     if (currentSongId !== s.id || currentLyrics.length !== (s.parsedLyrics || []).length) {

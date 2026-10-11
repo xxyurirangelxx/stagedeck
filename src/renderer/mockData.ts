@@ -5,8 +5,6 @@ export const INITIAL_DEMO_SONG: Song = {
   id: 'song-demo-1',
   title: 'Tempo Perdido',
   artist: 'Banda StageDeck',
-  originalKey: 'C',
-  currentKey: 'C',
   bpm: 128,
   timeSignature: '4/4',
   duration: 180,
@@ -37,7 +35,6 @@ export const INITIAL_DEMO_SONG: Song = {
 [00:49.50] F             G | É bem mais belo que esse sangue amargo
 [00:54.00] C             Am7 | E tão sério
 [00:58.20] Em7           F | E selvagem...`,
-  notes: 'Atenção na entrada: guia avisa "Refrão" no compasso 16. Click estrito no canal R para retorno in-ear.',
   createdAt: Date.now(),
   updatedAt: Date.now(),
 };
@@ -50,8 +47,6 @@ export const INITIAL_DEMO_SONGS: Song[] = [
     id: 'song-demo-2',
     title: 'O Segundo Sol',
     artist: 'Banda StageDeck',
-    originalKey: 'G',
-    currentKey: 'G',
     bpm: 110,
     timeSignature: '4/4',
     duration: 210,
@@ -65,7 +60,7 @@ export const INITIAL_DEMO_SONGS: Song[] = [
       { id: 'stem-2-7', name: 'Percussão', type: 'backing', volume: 0.60, panRouting: 'L', muted: false, solo: false },
       { id: 'stem-2-8', name: 'Backings', type: 'backing', volume: 0.75, panRouting: 'L', muted: false, solo: false },
       { id: 'stem-2-9', name: 'In-Ear: Click 110 BPM', type: 'in_ear', volume: 0.90, panRouting: 'R', muted: false, solo: false },
-      { id: 'stem-2-10', name: 'In-Ear: Guia de Tom e Cues', type: 'in_ear', volume: 0.90, panRouting: 'R', muted: false, solo: false },
+      { id: 'stem-2-10', name: 'In-Ear: Guia Vocal e Cues', type: 'in_ear', volume: 0.90, panRouting: 'R', muted: false, solo: false },
     ],
     lyricsChordsLrc: `[00:05.00] G     D/F# | [Introdução com violão]
 [00:10.00] Em    C | Quando o segundo sol chegar
@@ -77,7 +72,6 @@ export const INITIAL_DEMO_SONGS: Song[] = [
 [00:15.50] G     D/F# | Para realinhar as órbitas dos planetas
 [00:21.00] Em    C | Derrubando com assombro extremo
 [00:26.50] Am    D | E o pensamento de todo o mundo...`),
-    notes: 'Iniciar com violão solo. Entrada de banda completa no compasso 8.',
     createdAt: Date.now(),
     updatedAt: Date.now(),
   }

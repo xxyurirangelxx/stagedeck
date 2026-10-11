@@ -42,11 +42,11 @@ export const App: React.FC = () => {
     handleSelectSong,
     handleNextSong,
     handlePrevSong,
+    handleUpdateSong,
     handleUpdateStem,
     handleDeleteStem,
     handleSendAlert,
     handleClearAlert,
-    handleTranspose,
     handleMasterVolumeChange,
     handleToggleMasterMute
   } = useStageState();
@@ -115,7 +115,7 @@ export const App: React.FC = () => {
   }, [isPlaying, handlePlay, handlePause, handleStop, handleNextSong, handlePrevSong]);
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-stage-bg text-stage-text font-sans">
+    <div className="flex flex-col h-dvh w-screen overflow-hidden bg-stage-bg text-stage-text font-sans">
       {/* 1. Global Navigation Bar */}
       <Navbar
         currentTab={currentTab}
@@ -143,7 +143,6 @@ export const App: React.FC = () => {
         onSeek={handleSeek}
         onPrev={handlePrevSong}
         onNext={handleNextSong}
-        onTranspose={handleTranspose}
         onSelectSong={handleSelectSong}
       />
 
@@ -187,7 +186,6 @@ export const App: React.FC = () => {
             onPause={handlePause}
             onSeek={handleSeek}
             onSaveLyrics={handleSaveLyrics}
-            onTranspose={handleTranspose}
           />
         )}
 
@@ -197,6 +195,7 @@ export const App: React.FC = () => {
             setSongs={setSongs}
             currentSongId={currentSongId}
             onSelectSong={handleSelectSong}
+            onUpdateSong={handleUpdateSong}
             setlists={setlists}
             setSetlists={setSetlists}
             activeSetlist={activeSetlist}

@@ -3,7 +3,6 @@ import { Song, StemTrack, Setlist, Show, StageAlert, StageSyncPayload, AudioRout
 import { audioEngine } from '../audio/AudioEngine';
 import { audioStorage } from '../audio/audioStorage';
 import { INITIAL_DEMO_SONGS, INITIAL_DEMO_SETLISTS, INITIAL_DEMO_SHOWS } from '../mockData';
-import { parseLyricsChordsLrc, transposeChordLine, serializeLyricsToLrc } from '../utils/lyricsParser';
 
 declare global {
   interface Window {
@@ -146,7 +145,6 @@ export function useStageState() {
         id: currentSong.id,
         title: currentSong.title,
         artist: currentSong.artist,
-        currentKey: currentSong.currentKey,
         bpm: currentSong.bpm,
         parsedLyrics: currentSong.parsedLyrics || []
       } : null,
@@ -357,6 +355,19 @@ export function useStageState() {
     setSongs((prev) => prev.map((s) => (s.id === currentSong.id ? updatedSong : s)));
   }, [currentSong]);
 
+  // Edit song metadata
+  const handleUpdateSong = useCallback((songId: string, updates: Partial<Song>) => {
+    setSongs((prev) => prev.map((s) => (s.id === songId ? { ...s, ...updates, updatedAt: Date.now() } : s)));
+
+    // If the edited song is loaded in the console, refresh the transport clock.
+    // AudioEngine rule: real loaded audio wins; otherwise the new registered duration applies.
+    if (songId === currentSongId && updates.duration !== undefined) {
+      audioEngine.setSongDuration(updates.duration);
+      const effectiveDur = audioEngine.getDuration();
+      if (effectiveDur > 0) setDuration(effectiveDur);
+    }
+  }, [currentSongId]);
+
   // Alert system
   const handleSendAlert = useCallback((message: string, type: 'info' | 'warning' | 'urgent' = 'warning') => {
     const alert: StageAlert = {
@@ -379,28 +390,6 @@ export function useStageState() {
     setActiveAlert(null);
     broadcastStageState(currentTime, duration, null);
   }, [broadcastStageState, currentTime, duration]);
-
-  // Transpose song
-  const handleTranspose = useCallback((semitones: number) => {
-    if (!currentSong) return;
-    const parsed = currentSong.parsedLyrics || [];
-    const transposedLines = parsed.map((l) => ({
-      ...l,
-      chords: transposeChordLine(l.chords, semitones)
-    }));
-    const newLrc = serializeLyricsToLrc(transposedLines);
-
-    const updatedSong: Song = {
-      ...currentSong,
-      lyricsChordsLrc: newLrc,
-      parsedLyrics: transposedLines,
-      currentKey: transposeChordLine(currentSong.currentKey, semitones),
-      updatedAt: Date.now()
-    };
-
-    setSongs((prev) => prev.map((s) => (s.id === currentSong.id ? updatedSong : s)));
-    broadcastStageState(currentTime, duration);
-  }, [currentSong, broadcastStageState, currentTime, duration]);
 
   // Master controls
   const handleMasterVolumeChange = useCallback((vol: number) => {
@@ -442,11 +431,11 @@ export function useStageState() {
     handleSelectSong,
     handleNextSong,
     handlePrevSong,
+    handleUpdateSong,
     handleUpdateStem,
     handleDeleteStem,
     handleSendAlert,
     handleClearAlert,
-    handleTranspose,
     handleMasterVolumeChange,
     handleToggleMasterMute,
     refreshStageInfo

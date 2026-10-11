@@ -1,45 +1,5 @@
 import { LyricLine } from '../../shared/types';
 
-const NOTES_SHARP = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-const NOTES_FLAT  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
-
-export function transposeNote(note: string, semitones: number): string {
-  let idx = NOTES_SHARP.indexOf(note);
-  let useFlat = false;
-  if (idx === -1) {
-    idx = NOTES_FLAT.indexOf(note);
-    useFlat = true;
-  }
-  if (idx === -1) return note;
-
-  const newIdx = (idx + semitones + 24) % 12;
-  return useFlat ? NOTES_FLAT[newIdx] : NOTES_SHARP[newIdx];
-}
-
-export function transposeChord(chord: string, semitones: number): string {
-  if (semitones === 0) return chord;
-
-  // Handles chords like G, G#m7, Bb/D, F#m7(b5), Cmaj7/G
-  const chordRegex = /^([A-G][#b]?)([^/]*)(?:\/([A-G][#b]?))?$/;
-  const match = chord.trim().match(chordRegex);
-  if (!match) return chord;
-
-  const [, root, modifier, bass] = match;
-  const newRoot = transposeNote(root, semitones);
-  const newBass = bass ? `/${transposeNote(bass, semitones)}` : '';
-
-  return `${newRoot}${modifier}${newBass}`;
-}
-
-export function transposeChordLine(chordLine: string, semitones: number): string {
-  if (semitones === 0 || !chordLine) return chordLine;
-
-  // Replace each chord token while preserving spacing
-  return chordLine.replace(/\b([A-G][#b]?(?:[^\s/]*)(?:\/[A-G][#b]?)?)\b/g, (match) => {
-    return transposeChord(match, semitones);
-  });
-}
-
 export function formatTimeLrc(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);

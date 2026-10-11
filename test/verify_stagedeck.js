@@ -3,33 +3,17 @@ import { WebSocket } from 'ws';
 import { StageLocalServer } from '../dist-electron/main/stageServer.js';
 import {
   parseLyricsChordsLrc,
-  transposeChord,
-  transposeChordLine,
   serializeLyricsToLrc,
   exportToTTML
 } from '../src/renderer/utils/lyricsParser.ts';
+import { formatDurationInput, parseDurationInput } from '../src/renderer/utils/time.ts';
+import { INITIAL_DEMO_SONG } from '../src/renderer/mockData.ts';
 
 async function runTests() {
   console.log('--- [STAGE DECK SYSTEM VERIFICATION] ---\n');
 
-  // Test 1: Chord Transposition & Parser
-  console.log('1. Testando Motor Musical (Transposição de Cifras e Parser LRC):');
-  const chordTest1 = transposeChord('C', 2);
-  const chordTest2 = transposeChord('Am7', 2);
-  const chordTest3 = transposeChord('D/F#', 2);
-  const chordTest4 = transposeChord('Bb', -1);
-  console.log(`   Transposição C + 2 semitons = ${chordTest1} (Esperado: D)`);
-  console.log(`   Transposição Am7 + 2 semitons = ${chordTest2} (Esperado: Bm7)`);
-  console.log(`   Transposição D/F# + 2 semitons = ${chordTest3} (Esperado: E/G#)`);
-  console.log(`   Transposição Bb - 1 semitom = ${chordTest4} (Esperado: A)`);
-
-  if (chordTest1 !== 'D' || chordTest2 !== 'Bm7' || chordTest3 !== 'E/G#' || chordTest4 !== 'A') {
-    throw new Error('Falha no teste de transposição de acordes!');
-  }
-  console.log('   [SUCESSO] Transposição de cifras validada.\n');
-
-  // Test 2: LRC Parser & Serializer
-  console.log('2. Testando Parser e Serializador LRC:');
+  // Test 1: LRC Parser & Serializer
+  console.log('1. Testando Parser e Serializador LRC:');
   const sampleLrc = `[00:15.50] G    D/F# | Linha de teste de letra
 [00:25.00] Em   C    | Segunda estrofe sincronizada`;
   const parsed = parseLyricsChordsLrc(sampleLrc);
@@ -49,6 +33,25 @@ async function runTests() {
     throw new Error('Falha na geração de TTML!');
   }
   console.log('   [SUCESSO] Parser LRC e gerador TTML validados.\n');
+
+  // Test 2: Editar Música — utilitários de duração e modelo
+  console.log('2. Testando Utilitários de Duração e Modelo da Música (Edição):');
+
+  if (formatDurationInput(180) !== '03:00' || formatDurationInput(95) !== '01:35' || formatDurationInput(0) !== '00:00') {
+    throw new Error('Falha na formatação de duração (mm:ss)!');
+  }
+  console.log('   formatDurationInput: 180s → "03:00", 95s → "01:35", 0s → "00:00"');
+
+  if (parseDurationInput('03:00') !== 180 || parseDurationInput('01:35') !== 95 || parseDurationInput('200') !== 200 || parseDurationInput('') !== 180) {
+    throw new Error('Falha no parsing de duração (mm:ss)!');
+  }
+  console.log('   parseDurationInput: "03:00" → 180s, "01:35" → 95s, "200" → 200s, "" → 180s (fallback)');
+
+  if (INITIAL_DEMO_SONG.notes !== undefined) {
+    throw new Error('Falha: campo "notes" deveria ter sido removido do modelo de música!');
+  }
+  console.log('   Modelo da música sem campo "notes" validado.');
+  console.log('   [SUCESSO] Utilitários de duração e modelo de música validados.\n');
 
   // Test 3: Local Stage Server (HTTP + WebSocket)
   console.log('3. Testando Servidor de Palco Local (HTTP + WebSocket na porta 5052):');
@@ -80,7 +83,7 @@ async function runTests() {
   }
   console.log('   [SUCESSO] QR Code para conexão de celular gerado com sucesso.');
 
-  // Test WebSocket Client Connection & Live Sync Broadcast
+  // Test 4: WebSocket Client Connection & Live Sync Broadcast
   console.log('4. Testando Conexão WebSocket em Tempo Real:');
   const wsClient = new WebSocket('ws://127.0.0.1:5052');
 
@@ -98,7 +101,6 @@ async function runTests() {
           id: 'test-1',
           title: 'Música de Teste Ao Vivo',
           artist: 'Banda StageDeck',
-          currentKey: 'G',
           bpm: 128,
           parsedLyrics: parsed
         },
