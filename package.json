@@ -1,6 +1,6 @@
 {
   "name": "stagedeck",
-  "version": "1.1.0",
+  "version": "1.1.2",
   "description": "Estação de controle para shows ao vivo, ensaios, mixer multitrack e sincronizador de palco",
   "main": "dist-electron/main/main.js",
   "scripts": {
