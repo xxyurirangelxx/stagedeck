@@ -3,32 +3,54 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    color-scheme: light;
+  }
+
   body {
     @apply bg-stage-bg text-stage-text antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
+
+  /* Apple-style focus: 2px accent outline with 2px offset, never removed */
+  :focus-visible {
+    outline: 2px solid #155BD0;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: #155BD0;
+  }
+
+  ::selection {
+    background: #CDE1F9;
+    color: #1D1D1F;
+  }
 }
 
-/* Custom scrollbar for dark audio equipment style */
+/* Light scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0A0C0F;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2A3240;
-  border-radius: 3px;
+  background: #C7C7CC;
+  border-radius: 4px;
+  border: 2px solid #FFFFFF;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #394456;
+  background: #AEAEB5;
 }
 
-/* Tactile Audio Fader range styling */
+/* Horizontal range (master volume / scrubber) */
 input[type=range].fader-slider {
   -webkit-appearance: none;
   background: transparent;
@@ -40,27 +62,32 @@ input[type=range].fader-slider:focus {
 }
 
 input[type=range].fader-slider::-webkit-slider-runnable-track {
-  background: #181D24;
-  border: 1px solid #2A3240;
+  background: #E4E4E9;
+  border: 1px solid #C7C7CC;
   border-radius: 4px;
   height: 6px;
 }
 
 input[type=range].fader-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  height: 18px;
-  width: 14px;
-  border-radius: 2px;
-  background: #F59E0B;
-  border: 1px solid #D97706;
+  height: 16px;
+  width: 16px;
+  border-radius: 9999px;
+  background: #FFFFFF;
+  border: 1px solid #AEAEB5;
   margin-top: -6px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.08);
   cursor: grab;
+}
+
+input[type=range].fader-slider::-webkit-slider-thumb:hover {
+  border-color: #155BD0;
 }
 
 input[type=range].fader-slider::-webkit-slider-thumb:active {
   cursor: grabbing;
-  background: #FBBF24;
+  background: #EAF1FC;
+  border-color: #155BD0;
 }
 
 /* Vertical faders for mixer console */
@@ -77,28 +104,31 @@ input[type=range].fader-slider::-webkit-slider-thumb:active {
 }
 
 .fader-vertical::-webkit-slider-runnable-track {
-  background: #0f1318;
-  border: 1px solid #1f2633;
+  background: #ECECF0;
+  border: 1px solid #D2D2D7;
   border-radius: 4px;
   width: 6px;
-  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.9);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .fader-vertical::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 28px;
+  width: 26px;
   height: 14px;
-  border-radius: 2px;
-  background: linear-gradient(180deg, #374151 0%, #1e2530 45%, #0f1318 55%, #374151 100%);
-  border: 1px solid #4b5563;
-  margin-left: -11px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F5F5F7 50%, #E9E9EE 100%);
+  border: 1px solid #AEAEB5;
+  margin-left: -10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18), inset 0 1px 0 #FFFFFF;
   cursor: grab;
+}
+
+.fader-vertical::-webkit-slider-thumb:hover {
+  border-color: #155BD0;
 }
 
 .fader-vertical::-webkit-slider-thumb:active {
   cursor: grabbing;
-  border-color: #f59e0b;
-  background: linear-gradient(180deg, #4b5563 0%, #2a3443 45%, #171d26 55%, #4b5563 100%);
-  box-shadow: 0 0 8px rgba(245, 158, 11, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  border-color: #155BD0;
+  background: linear-gradient(180deg, #EAF1FC 0%, #DDE9FA 50%, #D0E1F8 100%);
 }

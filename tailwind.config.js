@@ -9,25 +9,36 @@ export default {
     extend: {
       colors: {
         stage: {
-          bg: "#0A0C0F",
-          panel: "#12151B",
-          card: "#181D24",
-          surface: "#1E242E",
-          border: "#2A3240",
-          borderLight: "#394456",
-          amber: "#F59E0B",
-          amberGlow: "#F59E0B33",
-          cyan: "#06B6D4",
-          green: "#10B981",
-          red: "#EF4444",
-          chord: "#FBBF24",
-          text: "#F8FAFC",
-          muted: "#94A3B8"
+          // Surfaces (Apple light)
+          bg: "#FFFFFF",          // page background (surface-base)
+          panel: "#F5F5F7",       // grouped / panel surface
+          card: "#FFFFFF",        // raised card on panel
+          surface: "#E9E9EE",     // pressed / subtle fill
+          // Lines
+          border: "#D2D2D7",      // default 1px border
+          borderLight: "#AEAEB5", // emphasized border
+          // Accent (primary actions, focus, active states)
+          accent: "#155BD0",
+          accentHover: "#2E6FDE", // primary hover (lightened ~10%)
+          accentTint: "#EAF1FC",  // soft blue tint for hovers / selected-soft
+          // Text
+          text: "#1D1D1F",        // headings, body
+          muted: "#6E6E73",       // secondary text (>= 4.5:1 on white)
+          faint: "#8E8E93",       // tertiary / decorative
+          // Domain colors
+          chord: "#B45309",       // chord text on white (amber-700, AA)
+          // Functional status hues (solid fills / text)
+          green: "#16A34A",
+          red: "#DC2626",
+          cyan: "#0E7490"
         }
       },
+      borderRadius: {
+        stage: "21px"
+      },
       fontFamily: {
-        mono: ['"JetBrains Mono"', 'Consolas', 'monospace'],
-        sans: ['"Inter"', 'system-ui', 'sans-serif']
+        sans: ['"Inter"', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'Consolas', 'monospace']
       }
     },
   },

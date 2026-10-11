@@ -24,15 +24,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenQrModal
 }) => {
   const tabs = [
-    { id: 'live', label: 'Modo Show / Ao Vivo', icon: Radio },
+    { id: 'live', label: 'Modo Show', icon: Radio },
     { id: 'mixer', label: 'Mixer de Stems', icon: Sliders },
-    { id: 'editor', label: 'Editor de Cifras & LRC', icon: FileText },
-    { id: 'setlists', label: 'Repertório & Setlists', icon: ListMusic },
+    { id: 'editor', label: 'Cifras & LRC', icon: FileText },
+    { id: 'setlists', label: 'Repertório', icon: ListMusic },
     { id: 'shows', label: 'Agenda & Ensaios', icon: Calendar },
   ];
 
   return (
-    <header className="h-14 bg-stage-panel border-b border-stage-border px-4 flex items-center justify-between select-none">
+    <header className="h-14 bg-white border-b border-stage-border px-4 flex items-center justify-between select-none">
       {/* Brand & Live Indicator */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2.5">
@@ -40,26 +40,23 @@ export const Navbar: React.FC<NavbarProps> = ({
             <img
               src={logoImg}
               alt="StageDeck Logo"
-              className="w-9 h-9 rounded-lg object-cover border border-stage-border shadow-[0_0_12px_rgba(245,158,11,0.25)] ring-1 ring-cyan-500/20"
+              className="w-9 h-9 rounded-lg object-cover border border-stage-border shadow-sm"
             />
-            <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-stage-amber border-2 border-stage-panel shadow-[0_0_8px_#F59E0B] animate-pulse" />
+            <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-stage-green border-2 border-white" />
           </div>
           <div className="flex flex-col">
-            <span className="font-extrabold tracking-wider text-base leading-none text-white font-mono">
-              STAGE<span className="text-stage-amber">DECK</span>
+            <span className="font-bold text-[15px] leading-none text-stage-text">
+              Stage<span className="text-stage-accent">Deck</span>
             </span>
-            <span className="text-[9px] font-mono tracking-widest text-cyan-400 font-bold uppercase mt-0.5">
-              LIVE SYSTEM
+            <span className="text-[10px] text-stage-muted font-medium mt-0.5">
+              Sistema ao vivo
             </span>
           </div>
         </div>
-        <span className="text-[10px] font-bold bg-stage-card text-stage-muted px-2 py-0.5 rounded border border-stage-border">
-          PRO CONSOLE
-        </span>
       </div>
 
-      {/* Main Navigation Tabs */}
-      <nav className="flex items-center gap-1">
+      {/* Main Navigation Tabs (segmented control) */}
+      <nav className="flex items-center gap-0.5 bg-stage-panel rounded-full p-1" aria-label="Navegação principal">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = currentTab === tab.id;
@@ -67,13 +64,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               key={tab.id}
               onClick={() => setCurrentTab(tab.id)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+              aria-pressed={isActive}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-colors ${
                 isActive
-                  ? 'bg-stage-surface text-white border border-stage-borderLight shadow-sm'
-                  : 'text-stage-muted hover:text-white hover:bg-stage-card'
+                  ? 'bg-white text-stage-text shadow-sm'
+                  : 'text-stage-muted hover:text-stage-text'
               }`}
             >
-              <Icon size={14} className={isActive ? 'text-stage-amber' : 'text-stage-muted'} />
+              <Icon size={14} className={isActive ? 'text-stage-accent' : 'text-stage-muted'} />
               <span>{tab.label}</span>
             </button>
           );
@@ -85,28 +83,29 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Stage Phone Connect Button */}
         <button
           onClick={onOpenQrModal}
-          className="flex items-center gap-2 bg-stage-card hover:bg-stage-surface border border-stage-border hover:border-stage-borderLight text-xs font-semibold px-3 py-1.5 rounded-md transition-all text-white"
+          className="flex items-center gap-2 bg-white hover:bg-stage-accentTint border border-stage-border hover:border-stage-accent text-[13px] font-medium px-3 py-1.5 rounded-full transition-colors text-stage-text"
           title="Conectar celular de palco via QR Code"
         >
-          <QrCode size={15} className="text-stage-amber" />
+          <QrCode size={15} className="text-stage-accent" />
           <span>Palco</span>
-          <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
+          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
             stageConnectedCount > 0
-              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-              : 'bg-zinc-800 text-zinc-400'
+              ? 'bg-green-100 text-green-700 border border-green-200'
+              : 'bg-stage-surface text-stage-muted border border-stage-border'
           }`}>
             {stageConnectedCount} {stageConnectedCount === 1 ? 'celular' : 'celulares'}
           </span>
         </button>
 
         {/* Master Output Section */}
-        <div className="flex items-center gap-2 pl-2 border-l border-stage-border">
+        <div className="flex items-center gap-2 pl-4 border-l border-stage-border">
           <button
             onClick={onToggleMasterMute}
-            className={`p-1.5 rounded text-xs font-bold transition-all ${
+            aria-label={isMasterMuted ? 'Desmutar Saída Master' : 'Corte Rápido Master (Pânico)'}
+            className={`p-1.5 rounded-full text-[13px] font-semibold transition-colors ${
               isMasterMuted
-                ? 'bg-red-600 text-white shadow-[0_0_12px_rgba(239,68,68,0.5)]'
-                : 'bg-stage-card text-stage-muted hover:text-white hover:bg-stage-surface'
+                ? 'bg-stage-red text-white'
+                : 'bg-white text-stage-muted border border-stage-border hover:text-stage-text hover:bg-stage-panel'
             }`}
             title={isMasterMuted ? 'Desmutar Saída Master' : 'Corte Rápido Master (Pânico)'}
           >
@@ -114,7 +113,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono font-bold text-stage-muted">MASTER</span>
+            <span className="text-[11px] font-medium text-stage-muted">Master</span>
             <input
               type="range"
               min="0"
@@ -123,10 +122,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               value={isMasterMuted ? 0 : masterVolume}
               onChange={(e) => onMasterVolumeChange(parseFloat(e.target.value))}
               className="w-20 fader-slider"
+              aria-label="Volume master"
               title={`Master Volume: ${Math.round(masterVolume * 100)}%`}
             />
-            <span className="text-[10px] font-mono font-bold text-stage-amber w-7 text-right">
-              {isMasterMuted ? 'MUTE' : `${Math.round(masterVolume * 100)}%`}
+            <span className="text-[11px] font-semibold text-stage-accent w-9 text-right tabular-nums">
+              {isMasterMuted ? 'Mudo' : `${Math.round(masterVolume * 100)}%`}
             </span>
           </div>
         </div>

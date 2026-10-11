@@ -53,14 +53,14 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
     <div className="flex-1 flex flex-col p-4 bg-stage-bg overflow-hidden select-none">
       <div className="flex items-center justify-between pb-3 mb-3 border-b border-stage-border">
         <div className="flex items-center gap-2">
-          <Calendar size={18} className="text-stage-amber" />
-          <h2 className="text-sm font-bold text-white uppercase font-mono tracking-wider">
-            Agenda da Banda: Shows & Ensaios
+          <Calendar size={18} className="text-stage-accent" />
+          <h2 className="text-[15px] font-semibold text-stage-text">
+            Agenda <span className="text-stage-muted font-normal">— Shows & Ensaios</span>
           </h2>
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stage-amber hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-sm transition-all"
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-stage-accent hover:bg-stage-accentHover text-white font-semibold text-[13px] transition-colors"
         >
           <Plus size={14} />
           <span>Novo Evento / Show</span>
@@ -75,56 +75,56 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
           return (
             <div
               key={show.id}
-              className={`p-4 rounded-xl border flex flex-col justify-between transition-all ${
+              className={`p-4 rounded-stage border flex flex-col justify-between transition-colors ${
                 show.completed
-                  ? 'bg-stage-panel/40 border-stage-border opacity-60'
-                  : 'bg-stage-panel border-stage-border hover:border-stage-borderLight shadow-sm'
+                  ? 'bg-stage-panel border-stage-border opacity-60'
+                  : 'bg-white border-stage-border hover:border-stage-borderLight shadow-sm'
               }`}
             >
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded uppercase font-mono ${
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase ${
                     isShow
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                      : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                      ? 'bg-stage-accentTint text-stage-accent border border-blue-200'
+                      : 'bg-cyan-50 text-stage-cyan border border-cyan-200'
                   }`}>
-                    {isShow ? 'APRESENTAÇÃO / SHOW' : 'ENSAIO GERAL'}
+                    {isShow ? 'Apresentação / Show' : 'Ensaio Geral'}
                   </span>
                   <button
                     onClick={() => handleToggleComplete(show.id)}
-                    className="flex items-center gap-1 text-[11px] text-stage-muted hover:text-white"
+                    className="flex items-center gap-1 text-[11px] text-stage-muted hover:text-stage-text transition-colors"
                   >
                     <CheckCircle
                       size={15}
-                      className={show.completed ? 'text-emerald-400' : 'text-stage-borderLight'}
+                      className={show.completed ? 'text-stage-green' : 'text-stage-borderLight'}
                     />
                     <span>{show.completed ? 'Concluído' : 'Pendente'}</span>
                   </button>
                 </div>
 
-                <h3 className="text-base font-bold text-white mt-1">{show.title}</h3>
+                <h3 className="text-base font-semibold text-stage-text mt-1">{show.title}</h3>
 
-                <div className="text-xs text-stage-muted flex items-center gap-1.5">
-                  <Clock size={13} className="text-stage-amber" />
+                <div className="text-xs text-stage-muted flex items-center gap-1.5 tabular-nums">
+                  <Clock size={13} className="text-stage-accent" />
                   <span>{show.date}</span>
                 </div>
 
                 {show.location && (
                   <div className="text-xs text-stage-muted flex items-center gap-1.5">
-                    <MapPin size={13} className="text-cyan-400" />
+                    <MapPin size={13} className="text-stage-cyan" />
                     <span>{show.location}</span>
                   </div>
                 )}
 
                 {linkedSetlist && (
-                  <div className="text-xs text-stage-muted flex items-center gap-1.5 bg-stage-bg p-2 rounded border border-stage-border mt-1">
-                    <FileText size={13} className="text-stage-amber" />
-                    <span>Setlist: <strong className="text-white">{linkedSetlist.title}</strong></span>
+                  <div className="text-xs text-stage-muted flex items-center gap-1.5 bg-stage-panel p-2 rounded-xl border border-stage-border mt-1">
+                    <FileText size={13} className="text-stage-accent" />
+                    <span>Setlist: <strong className="text-stage-text">{linkedSetlist.title}</strong></span>
                   </div>
                 )}
 
                 {show.notes && (
-                  <p className="text-xs text-stage-muted bg-stage-card/50 p-2 rounded border border-stage-border/60 mt-1 italic">
+                  <p className="text-xs text-stage-muted bg-stage-panel/60 p-2 rounded-xl border border-stage-border mt-1">
                     "{show.notes}"
                   </p>
                 )}
@@ -135,67 +135,67 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
           <form
             onSubmit={handleCreate}
-            className="bg-stage-panel border border-stage-border rounded-xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4"
+            className="bg-white border border-stage-border rounded-stage p-6 w-full max-w-md shadow-2xl flex flex-col gap-4"
           >
-            <h3 className="text-sm font-bold text-white uppercase font-mono tracking-wider">
+            <h3 className="text-[15px] font-semibold text-stage-text">
               Adicionar Show ou Ensaio
             </h3>
 
             <div>
-              <label className="text-xs font-bold text-stage-muted block mb-1">Título do Evento</label>
+              <label className="text-xs font-medium text-stage-muted block mb-1">Título do Evento</label>
               <input
                 type="text"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Ex: Show no Teatro Municipal"
-                className="w-full bg-stage-bg border border-stage-border focus:border-stage-amber rounded-lg px-3 py-2 text-sm text-white outline-none"
+                className="w-full bg-white border border-stage-border focus:border-stage-accent rounded-2xl px-3 py-2 text-sm text-stage-text outline-none"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-bold text-stage-muted block mb-1">Tipo</label>
+                <label className="text-xs font-medium text-stage-muted block mb-1">Tipo</label>
                 <select
                   value={type}
                   onChange={(e) => setType(e.target.value as 'show' | 'rehearsal')}
-                  className="w-full bg-stage-bg border border-stage-border focus:border-stage-amber rounded-lg px-3 py-2 text-sm text-white outline-none"
+                  className="w-full bg-white border border-stage-border focus:border-stage-accent rounded-2xl px-3 py-2 text-sm text-stage-text outline-none"
                 >
                   <option value="show">Apresentação / Show</option>
                   <option value="rehearsal">Ensaio de Banda</option>
                 </select>
               </div>
               <div>
-                <label className="text-xs font-bold text-stage-muted block mb-1">Data</label>
+                <label className="text-xs font-medium text-stage-muted block mb-1">Data</label>
                 <input
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full bg-stage-bg border border-stage-border focus:border-stage-amber rounded-lg px-3 py-2 text-sm text-white outline-none"
+                  className="w-full bg-white border border-stage-border focus:border-stage-accent rounded-2xl px-3 py-2 text-sm text-stage-text outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-bold text-stage-muted block mb-1">Local / Estúdio</label>
+              <label className="text-xs font-medium text-stage-muted block mb-1">Local / Estúdio</label>
               <input
                 type="text"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 placeholder="Ex: Bar do Rock, Estúdio Central"
-                className="w-full bg-stage-bg border border-stage-border focus:border-stage-amber rounded-lg px-3 py-2 text-sm text-white outline-none"
+                className="w-full bg-white border border-stage-border focus:border-stage-accent rounded-2xl px-3 py-2 text-sm text-stage-text outline-none"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-stage-muted block mb-1">Setlist Vinculado</label>
+              <label className="text-xs font-medium text-stage-muted block mb-1">Setlist Vinculado</label>
               <select
                 value={selectedSetlistId}
                 onChange={(e) => setSelectedSetlistId(e.target.value)}
-                className="w-full bg-stage-bg border border-stage-border focus:border-stage-amber rounded-lg px-3 py-2 text-sm text-white outline-none"
+                className="w-full bg-white border border-stage-border focus:border-stage-accent rounded-2xl px-3 py-2 text-sm text-stage-text outline-none"
               >
                 {setlists.map((sl) => (
                   <option key={sl.id} value={sl.id}>{sl.title}</option>
@@ -204,13 +204,13 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
             </div>
 
             <div>
-              <label className="text-xs font-bold text-stage-muted block mb-1">Anotações / Passagem de Som</label>
+              <label className="text-xs font-medium text-stage-muted block mb-1">Anotações / Passagem de Som</label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
                 placeholder="Ex: Levar cabos extras, passagem às 18h..."
-                className="w-full bg-stage-bg border border-stage-border focus:border-stage-amber rounded-lg px-3 py-2 text-sm text-white outline-none resize-none"
+                className="w-full bg-white border border-stage-border focus:border-stage-accent rounded-2xl px-3 py-2 text-sm text-stage-text outline-none resize-none"
               />
             </div>
 
@@ -218,13 +218,13 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 rounded-lg bg-stage-card hover:bg-stage-surface border border-stage-border text-xs font-bold text-stage-muted hover:text-white"
+                className="px-4 py-2 rounded-full bg-white hover:bg-stage-panel border border-stage-border text-[13px] font-medium text-stage-text transition-colors"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 rounded-lg bg-stage-amber hover:bg-amber-400 text-slate-950 text-xs font-bold"
+                className="px-4 py-2 rounded-full bg-stage-accent hover:bg-stage-accentHover text-white text-[13px] font-semibold transition-colors"
               >
                 Salvar Evento
               </button>

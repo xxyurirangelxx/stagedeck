@@ -31,37 +31,38 @@ export const QrModal: React.FC<QrModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 select-none">
-      <div className="bg-stage-panel border border-stage-border rounded-2xl p-6 w-full max-w-lg shadow-2xl flex flex-col gap-5">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50 select-none">
+      <div className="bg-white border border-stage-border rounded-stage p-6 w-full max-w-lg shadow-2xl flex flex-col gap-5">
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-stage-border">
           <div className="flex items-center gap-3">
             <img
               src={logoImg}
               alt="StageDeck"
-              className="w-10 h-10 rounded-xl object-cover border border-stage-border shadow-md"
+              className="w-10 h-10 rounded-xl object-cover border border-stage-border shadow-sm"
             />
             <div>
-              <h3 className="text-sm font-bold text-white uppercase font-mono tracking-wider">
+              <h3 className="text-[15px] font-semibold text-stage-text">
                 Conectar Celular / Tablet de Palco
               </h3>
-              <p className="text-[11px] text-stage-muted">
+              <p className="text-xs text-stage-muted">
                 100% offline — sem precisar de internet ou instalar aplicativos
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-stage-muted hover:text-white hover:bg-stage-card"
+            aria-label="Fechar janela de conexão"
+            className="p-1.5 rounded-full text-stage-muted hover:text-stage-text hover:bg-stage-panel transition-colors"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* QR Code and URL display */}
-        <div className="flex flex-col items-center justify-center gap-4 bg-stage-bg p-5 rounded-xl border border-stage-border">
+        <div className="flex flex-col items-center justify-center gap-4 bg-stage-panel p-5 rounded-stage border border-stage-border">
           {primary.qrDataUrl ? (
-            <div className="bg-white p-3 rounded-xl shadow-lg">
+            <div className="bg-white p-3 rounded-2xl border border-stage-border shadow-sm">
               <img
                 src={primary.qrDataUrl}
                 alt="QR Code de Conexão do Palco"
@@ -69,26 +70,27 @@ export const QrModal: React.FC<QrModalProps> = ({
               />
             </div>
           ) : (
-            <div className="w-48 h-48 bg-stage-card rounded-xl flex items-center justify-center text-stage-muted">
-              <QrCode size={64} className="text-stage-borderLight" />
+            <div className="w-48 h-48 bg-white rounded-2xl border border-stage-border flex items-center justify-center text-stage-faint">
+              <QrCode size={64} />
             </div>
           )}
 
           <div className="w-full flex flex-col items-center gap-2">
-            <span className="text-[11px] font-bold text-stage-muted uppercase tracking-wider">
+            <span className="text-[11px] font-medium text-stage-muted uppercase">
               Endereço na Rede Local:
             </span>
             <div className="flex items-center gap-2 w-full justify-center">
-              <code className="bg-stage-card border border-stage-borderLight px-3 py-1.5 rounded-lg text-sm font-mono font-bold text-stage-amber truncate max-w-[280px]">
+              <code className="bg-white border border-stage-border px-3 py-1.5 rounded-full text-[13px] font-semibold text-stage-text tabular-nums truncate max-w-[280px]">
                 {primary.url}
               </code>
               <button
                 onClick={() => handleCopy(primary.url)}
-                className="p-1.5 rounded-lg bg-stage-surface hover:bg-stage-card border border-stage-border text-white transition-all"
+                aria-label="Copiar URL"
+                className="p-1.5 rounded-full bg-white hover:bg-stage-accentTint border border-stage-border hover:border-stage-accent text-stage-text transition-colors"
                 title="Copiar URL"
               >
                 {copiedUrl === primary.url ? (
-                  <Check size={16} className="text-emerald-400" />
+                  <Check size={16} className="text-stage-green" />
                 ) : (
                   <Copy size={16} />
                 )}
@@ -97,7 +99,8 @@ export const QrModal: React.FC<QrModalProps> = ({
                 href={primary.url}
                 target="_blank"
                 rel="noreferrer"
-                className="p-1.5 rounded-lg bg-stage-surface hover:bg-stage-card border border-stage-border text-cyan-400 transition-all"
+                aria-label="Abrir no navegador"
+                className="p-1.5 rounded-full bg-white hover:bg-stage-accentTint border border-stage-border hover:border-stage-accent text-stage-accent transition-colors"
                 title="Abrir no navegador"
               >
                 <ExternalLink size={16} />
@@ -107,34 +110,34 @@ export const QrModal: React.FC<QrModalProps> = ({
         </div>
 
         {/* Instructions */}
-        <div className="space-y-2 text-xs text-stage-muted bg-stage-card p-3.5 rounded-xl border border-stage-border">
+        <div className="space-y-2 text-[13px] text-stage-muted bg-stage-panel p-3.5 rounded-stage border border-stage-border">
           <div className="flex items-start gap-2">
-            <Wifi size={14} className="text-stage-amber mt-0.5 flex-shrink-0" />
+            <Wifi size={14} className="text-stage-accent mt-0.5 flex-shrink-0" />
             <span>
-              Certifique-se de que o celular está no <strong>mesmo Wi-Fi</strong> do computador (ou no Ponto de Acesso / Roteador 4G de um dos celulares).
+              Certifique-se de que o celular está no <strong className="text-stage-text">mesmo Wi-Fi</strong> do computador (ou no Ponto de Acesso / Roteador 4G de um dos celulares).
             </span>
           </div>
           <div className="flex items-start gap-2">
-            <Smartphone size={14} className="text-cyan-400 mt-0.5 flex-shrink-0" />
+            <Smartphone size={14} className="text-stage-cyan mt-0.5 flex-shrink-0" />
             <span>
-              Aponte a câmera do celular para escanear o QR Code. A tela possui <strong>WakeLock automático</strong> (não apaga durante o show).
+              Aponte a câmera do celular para escanear o QR Code. A tela possui <strong className="text-stage-text">WakeLock automático</strong> (não apaga durante o show).
             </span>
           </div>
         </div>
 
         {/* Footer Status */}
-        <div className="flex items-center justify-between pt-2">
+        <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-2">
             <div className={`w-2.5 h-2.5 rounded-full ${
-              connectedCount > 0 ? 'bg-emerald-500 shadow-[0_0_8px_#10B981]' : 'bg-zinc-600'
+              connectedCount > 0 ? 'bg-stage-green' : 'bg-stage-borderLight'
             }`} />
-            <span className="text-xs font-semibold text-white">
+            <span className="text-[13px] font-medium text-stage-text tabular-nums">
               {connectedCount} dispositivo(s) conectado(s) ao vivo
             </span>
           </div>
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-stage-amber hover:bg-amber-400 text-slate-950 font-bold text-xs"
+            className="px-4 py-2 rounded-full bg-stage-accent hover:bg-stage-accentHover text-white font-semibold text-[13px] transition-colors"
           >
             Concluído
           </button>
