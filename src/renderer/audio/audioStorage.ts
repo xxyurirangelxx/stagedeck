@@ -1,7 +1,6 @@
 /**
- * Audio Storage Manager using native browser/Electron IndexedDB.
- * Allows audio stems (WAV, FLAC, MP3, M4A) to persist permanently
- * across application restarts, reboots, and window reloads.
+ * Electron stores original audio bytes in the app's data directory.
+ * IndexedDB remains the web-preview fallback and migration source.
  */
 
 const DB_NAME = 'stagedeck_audio_db';
@@ -45,9 +44,13 @@ export interface StoredStemAudio {
 
 export const audioStorage = {
   /**
-   * Save stem audio ArrayBuffer permanently to IndexedDB
+   * Save the original stem audio permanently.
    */
   async saveStemAudio(stemId: string, fileName: string, buffer: ArrayBuffer): Promise<void> {
+    if (window.electronAPI?.saveAudio) {
+      await window.electronAPI.saveAudio(stemId, buffer);
+      return;
+    }
     try {
       const db = await getDb();
       return new Promise((resolve, reject) => {
@@ -62,21 +65,27 @@ export const audioStorage = {
         };
 
         const req = store.put(record);
-        req.onsuccess = () => resolve();
+        tx.oncomplete = () => resolve();
+        tx.onabort = () => reject(tx.error);
         req.onerror = () => reject(req.error);
       });
     } catch (err) {
       console.error(`[AudioStorage] Falha ao salvar áudio da stem ${stemId}:`, err);
+      throw err;
     }
   },
 
   /**
-   * Retrieve stem audio ArrayBuffer from IndexedDB
+   * Read native audio, migrating legacy IndexedDB records when needed.
    */
   async getStemAudio(stemId: string): Promise<StoredStemAudio | null> {
+    if (window.electronAPI?.getAudio) {
+      const native = await window.electronAPI.getAudio(stemId);
+      if (native) return native;
+    }
     try {
       const db = await getDb();
-      return new Promise((resolve, reject) => {
+      const stored = await new Promise<StoredStemAudio | null>((resolve, reject) => {
         const tx = db.transaction(STORE_NAME, 'readonly');
         const store = tx.objectStore(STORE_NAME);
         const req = store.get(stemId);
@@ -86,6 +95,10 @@ export const audioStorage = {
         };
         req.onerror = () => reject(req.error);
       });
+      if (stored && window.electronAPI?.saveAudio) {
+        await window.electronAPI.saveAudio(stemId, stored.buffer);
+      }
+      return stored;
     } catch (err) {
       console.error(`[AudioStorage] Falha ao recuperar áudio da stem ${stemId}:`, err);
       return null;
@@ -96,6 +109,7 @@ export const audioStorage = {
    * Remove stem audio from IndexedDB
    */
   async deleteStemAudio(stemId: string): Promise<void> {
+    if (window.electronAPI?.deleteAudio) await window.electronAPI.deleteAudio(stemId);
     try {
       const db = await getDb();
       return new Promise((resolve, reject) => {

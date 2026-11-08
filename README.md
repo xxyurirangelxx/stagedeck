@@ -2,7 +2,7 @@
 
 # StageDeck
 
-**Estação de controle para shows ao vivo, ensaios, mixer multitrack e sincronizador de palco.**
+**Estação de controle para shows ao vivo, mixer multitrack e sincronizador de palco.**
 
 [![CI](https://github.com/xxyurirangelxx/stagedeck/actions/workflows/ci.yml/badge.svg)](https://github.com/xxyurirangelxx/stagedeck/actions/workflows/ci.yml)
 [![Licença: MIT](https://img.shields.io/badge/Licen%C3%A7a-MIT-blue.svg)](LICENSE)
@@ -17,10 +17,10 @@ StageDeck é um aplicativo desktop (Electron) que funciona como o console da ban
 - **Mixer de palco multitrack** — até 8 stems de backing + 2 de in-ear por música, com volume, mute, solo, medidores VU e roteamento **L (PA) / R (in-ear)** por canal.
 - **Cifras & letras sincronizadas** — editor LRC com *Tap to Sync*, ajuste fino de tempos (±0.1s), importação/exportação de `.LRC` e exportação broadcast `.TTML`, com teleprompter de auto-scroll.
 - **Setlists e repertório** — catálogo de músicas com cadastro e edição (título, artista, BPM, duração), montagem da ordem do show e duração estimada do set.
-- **Shows e ensaios** — agenda com tipo (show/ensaio), local, notas e setlist vinculada.
 - **Visor de palco mobile** — o app serve uma página local e gera um QR Code; cada músico acompanha música atual, BPM, tempo, letra/cifra rolando e alertas em tempo real via WebSocket.
 - **Alertas de palco** — mensagens instantâneas (informativo/atenção/urgente) com auto-limpeza para avisar "repete o refrão", mudanças de arranjo etc.
-- **Persistência local** — catálogo e setlists em disco/localStorage; áudio das stems em IndexedDB, restaurado automaticamente.
+- **Persistência local** — catálogo e setlists em disco/localStorage; os stems são copiados integralmente para `stagedeck_data/audio` dentro da pasta de dados do app (no Windows, normalmente `%APPDATA%/stagedeck`). O arquivo original pode ser movido depois da importação. Áudios antigos do IndexedDB são migrados ao carregar ou exportar.
+- **Backup portátil** — em **Repertório**, use **Exportar backup (.zip)** para gerar um único arquivo com músicas, letras, configurações dos canais, setlists e todos os áudios. Copie o `.zip` para o outro PC e use **Importar backup (.zip)**. A importação substitui o repertório e os setlists atuais; exporte um backup antes se quiser preservá-los. Áudios ausentes interrompem a transferência sem alterar os dados existentes.
 
 ## Stack
 
@@ -59,10 +59,12 @@ npx tsx test/verify_stagedeck.js   # smoke test: parser LRC/TTML, servidor de pa
 ```bash
 npm run build      # build do renderer (Vite) + compilação do Electron (tsc)
 npm run dist       # instalador Windows (NSIS) via electron-builder
+npm run dist:linux # AppImage Linux (precisa rodar em Linux ou no CI)
+npm run dist:all   # Windows + Linux no mesmo comando
 npm run dist:dir   # build empacotado sem instalador
 ```
 
-Os instaladores são gerados em `release/` (fora do controle de versão). Para distribuir binários, use as **GitHub Releases**.
+Os instaladores são gerados em `release/` (fora do controle de versão). Para distribuir binários, use as **GitHub Releases**. O AppImage do Linux não é gerado no Windows: use o workflow `Release` (GitHub Actions) ou rode `npm run dist:linux` em uma máquina Linux.
 
 ## Estrutura do projeto
 
@@ -70,8 +72,8 @@ Os instaladores são gerados em `release/` (fora do controle de versão). Para d
 src/
 ├── main/        Processo principal do Electron + servidor de palco (HTTP/WS/QR)
 ├── renderer/    Interface (React): componentes, store, engine de áudio, parser LRC/TTML
-│   └── audio/   Web Audio API + armazenamento IndexedDB das stems
-├── shared/      Tipos compartilhados (Song, Setlist, Show, StageSyncPayload...)
+│   └── audio/   Web Audio API + acesso às cópias locais (IndexedDB no preview web)
+├── shared/      Tipos compartilhados (Song, Setlist, Profile, StageSyncPayload...)
 └── test/        Setup do Vitest
 test/            Smoke test end-to-end
 ```

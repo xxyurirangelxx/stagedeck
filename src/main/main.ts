@@ -2,6 +2,8 @@ import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
 import { stageServer } from './stageServer.js';
 import { storage } from './storage.js';
+import fs from 'node:fs/promises';
+import { audioPath, saveAudio, exportProfile, importProfile } from './profileStorage.js';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -51,6 +53,43 @@ app.whenReady().then(async () => {
   }
 
   // Setup IPC handlers
+  ipcMain.handle('audio:save', async (_event, { id, buffer }) => {
+    await saveAudio(storage.dataDir, id, buffer);
+  });
+  ipcMain.handle('audio:get', async (_event, id) => {
+    try {
+      const bytes = await fs.readFile(audioPath(storage.dataDir, id));
+      return { stemId: id, fileName: '', buffer: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), timestamp: 0 };
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+      throw error;
+    }
+  });
+  ipcMain.handle('audio:delete', async (_event, id) => {
+    await fs.rm(audioPath(storage.dataDir, id), { force: true });
+  });
+  ipcMain.handle('backup:export', async (_event, profile) => {
+    if (!mainWindow) return null;
+    const stamp = new Date().toISOString().slice(0, 10);
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Salvar backup do StageDeck',
+      defaultPath: `StageDeck-backup-${stamp}.zip`,
+      filters: [{ name: 'Backup StageDeck', extensions: ['zip'] }]
+    });
+    if (result.canceled || !result.filePath) return null;
+    const destination = result.filePath.toLowerCase().endsWith('.zip') ? result.filePath : `${result.filePath}.zip`;
+    return exportProfile(storage.dataDir, destination, profile);
+  });
+  ipcMain.handle('backup:import', async () => {
+    if (!mainWindow) return null;
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Selecione o backup do StageDeck',
+      filters: [{ name: 'Backup StageDeck', extensions: ['zip'] }],
+      properties: ['openFile']
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    return importProfile(storage.dataDir, result.filePaths[0]);
+  });
   ipcMain.handle('stage:get-info', async () => {
     const addresses = await stageServer.getStageUrlAndQr();
     const count = stageServer.getConnectedCount();

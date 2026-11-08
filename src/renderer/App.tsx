@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useStageState } from './stores/useStageStore';
 import { Navbar } from './components/Navbar';
+import { ProfileControls } from './components/ProfileControls';
 import { TransportBar } from './components/TransportBar';
 import { LiveView } from './components/LiveView';
 import { MixerPanel } from './components/MixerPanel';
 import { LyricsChordsEditor } from './components/LyricsChordsEditor';
 import { SetlistsView } from './components/SetlistsView';
-import { ShowsView } from './components/ShowsView';
 import { QrModal } from './components/QrModal';
 import { StemTrack, Song, LyricLine } from '../shared/types';
 
@@ -15,6 +15,8 @@ export const App: React.FC = () => {
   const [isQrModalOpen, setIsQrModalOpen] = useState<boolean>(false);
 
   const {
+    storageReady,
+    applyProfile,
     songs,
     setSongs,
     currentSong,
@@ -22,8 +24,6 @@ export const App: React.FC = () => {
     setlists,
     setSetlists,
     activeSetlist,
-    shows,
-    setShows,
     isPlaying,
     currentTime,
     duration,
@@ -128,6 +128,8 @@ export const App: React.FC = () => {
         onOpenQrModal={() => setIsQrModalOpen(true)}
       />
 
+      {currentTab === 'setlists' && <ProfileControls songs={songs} setlists={setlists} onImport={applyProfile} disabled={!storageReady} />}
+
       {/* 2. Global Audio Transport Bar (Always accessible for live sound tech) */}
       <TransportBar
         currentSong={currentSong}
@@ -202,13 +204,7 @@ export const App: React.FC = () => {
           />
         )}
 
-        {currentTab === 'shows' && (
-          <ShowsView
-            shows={shows}
-            setShows={setShows}
-            setlists={setlists}
-          />
-        )}
+
       </main>
 
       {/* 4. Stage Phone QR Connection Modal */}

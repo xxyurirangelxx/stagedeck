@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX, QrCode, Radio, Sliders, Music, FileText, ListMusic, Calendar } from 'lucide-react';
+import { Volume2, VolumeX, QrCode, Radio, Sliders, Music, FileText, ListMusic } from 'lucide-react';
 import logoImg from '../assets/logo.png';
 
 interface NavbarProps {
@@ -28,7 +28,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'mixer', label: 'Mixer de Stems', icon: Sliders },
     { id: 'editor', label: 'Cifras & LRC', icon: FileText },
     { id: 'setlists', label: 'Repertório', icon: ListMusic },
-    { id: 'shows', label: 'Agenda & Ensaios', icon: Calendar },
   ];
 
   return (

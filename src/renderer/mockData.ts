@@ -1,4 +1,4 @@
-import { Song, Setlist, Show } from '../shared/types';
+import { Song, Setlist } from '../shared/types';
 import { parseLyricsChordsLrc } from './utils/lyricsParser';
 
 export const INITIAL_DEMO_SONG: Song = {
@@ -76,7 +76,6 @@ export const INITIAL_DEMO_SONGS: Song[] = [
     updatedAt: Date.now(),
   }
 ];
-
 export const INITIAL_DEMO_SETLISTS: Setlist[] = [
   {
     id: 'setlist-demo-1',
@@ -88,28 +87,5 @@ export const INITIAL_DEMO_SETLISTS: Setlist[] = [
     ],
     createdAt: Date.now(),
     updatedAt: Date.now(),
-  }
-];
-
-export const INITIAL_DEMO_SHOWS: Show[] = [
-  {
-    id: 'show-demo-1',
-    title: 'Festival Rock na Cidade',
-    date: '2026-10-15',
-    type: 'show',
-    location: 'Palco Arena Central',
-    setlistId: 'setlist-demo-1',
-    notes: 'Passagem de som às 17h. Início do show pontualmente às 21h30.',
-    completed: false
-  },
-  {
-    id: 'show-demo-2',
-    title: 'Ensaio Geral Pré-Estreia',
-    date: '2026-10-12',
-    type: 'rehearsal',
-    location: 'Estúdio Som & Arte',
-    setlistId: 'setlist-demo-1',
-    notes: 'Focar na transição entre músicas e sincronia do in-ear.',
-    completed: false
   }
 ];

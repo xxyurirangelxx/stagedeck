@@ -43,14 +43,14 @@ export const MixerStrip: React.FC<MixerStripProps> = ({
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      // Permanently store audio in IndexedDB so it persists across app reboots
+      const duration = await audioEngine.loadTrackFile(stem, arrayBuffer);
+      // Decode first so an invalid upload cannot replace the saved audio.
       await audioStorage.saveStemAudio(stem.id, file.name, arrayBuffer);
 
-      const duration = await audioEngine.loadTrackFile(stem, arrayBuffer);
       onUpdateStem({
         fileName: file.name,
-        filePath: (file as unknown as { path?: string }).path || undefined,
-        fileUrl: URL.createObjectURL(file),
+        filePath: undefined,
+        fileUrl: undefined,
         duration: duration
       });
       console.log(`Faixa carregada e persistida com sucesso: ${file.name} (${duration.toFixed(1)}s)`);

@@ -1,23 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Song, StemTrack, Setlist, Show, StageAlert, StageSyncPayload, AudioRouting } from '../../shared/types';
+import { Song, StemTrack, Setlist, StageAlert, StageSyncPayload, AudioRouting, Profile } from '../../shared/types';
 import { audioEngine } from '../audio/AudioEngine';
 import { audioStorage } from '../audio/audioStorage';
 import { parseLyricsChordsLrc } from '../utils/lyricsParser';
-import { INITIAL_DEMO_SONGS, INITIAL_DEMO_SETLISTS, INITIAL_DEMO_SHOWS } from '../mockData';
+import { INITIAL_DEMO_SONGS, INITIAL_DEMO_SETLISTS } from '../mockData';
 
 declare global {
   interface Window {
-    electronAPI?: {
-      getStageInfo: () => Promise<{ addresses: { url: string; qrDataUrl: string }[]; count: number }>;
-      broadcastStage: (payload: StageSyncPayload) => Promise<boolean>;
-      readStorage: <T>(key: string, fallback: T) => Promise<T>;
-      writeStorage: <T>(key: string, data: T) => Promise<boolean>;
-      openAudioFiles: () => Promise<string[]>;
-    };
+    electronAPI?: import('../../preload').ElectronAPI;
   }
 }
 
 export function useStageState() {
+  const [storageReady, setStorageReady] = useState(!window.electronAPI);
   const [songs, setSongs] = useState<Song[]>(() => {
     const saved = localStorage.getItem('stagedeck_songs');
     return saved ? JSON.parse(saved) : INITIAL_DEMO_SONGS;
@@ -34,11 +29,6 @@ export function useStageState() {
 
   const [activeSetlistId, setActiveSetlistId] = useState<string>(() => {
     return INITIAL_DEMO_SETLISTS[0]?.id || '';
-  });
-
-  const [shows, setShows] = useState<Show[]>(() => {
-    const saved = localStorage.getItem('stagedeck_shows');
-    return saved ? JSON.parse(saved) : INITIAL_DEMO_SHOWS;
   });
 
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -65,45 +55,39 @@ export function useStageState() {
   // On initial mount: load from native Electron disk storage if present
   useEffect(() => {
     if (window.electronAPI) {
-      window.electronAPI.readStorage<Song[]>('songs', []).then((storedSongs) => {
-        if (storedSongs && storedSongs.length > 0) {
+      Promise.all([
+        window.electronAPI.readStorage<Song[] | null>('songs', null),
+        window.electronAPI.readStorage<Setlist[] | null>('setlists', null)
+      ]).then(([storedSongs, storedSetlists]) => {
+        if (storedSongs) {
           setSongs(storedSongs);
+          setCurrentSongId(storedSongs[0]?.id || '');
         }
-      });
-      window.electronAPI.readStorage<Setlist[]>('setlists', []).then((storedSetlists) => {
-        if (storedSetlists && storedSetlists.length > 0) {
+        if (storedSetlists) {
           setSetlists(storedSetlists);
+          setActiveSetlistId(storedSetlists[0]?.id || '');
         }
-      });
-      window.electronAPI.readStorage<Show[]>('shows', []).then((storedShows) => {
-        if (storedShows && storedShows.length > 0) {
-          setShows(storedShows);
-        }
-      });
+        setStorageReady(true);
+      }).catch(error => console.error('Falha ao abrir perfil:', error));
     }
   }, []);
 
   // Sync to local storage / Electron storage
   useEffect(() => {
+    if (!storageReady) return;
     localStorage.setItem('stagedeck_songs', JSON.stringify(songs));
     if (window.electronAPI) {
       window.electronAPI.writeStorage('songs', songs);
     }
-  }, [songs]);
+  }, [songs, storageReady]);
 
   useEffect(() => {
+    if (!storageReady) return;
     localStorage.setItem('stagedeck_setlists', JSON.stringify(setlists));
     if (window.electronAPI) {
       window.electronAPI.writeStorage('setlists', setlists);
     }
-  }, [setlists]);
-
-  useEffect(() => {
-    localStorage.setItem('stagedeck_shows', JSON.stringify(shows));
-    if (window.electronAPI) {
-      window.electronAPI.writeStorage('shows', shows);
-    }
-  }, [shows]);
+  }, [setlists, storageReady]);
 
   // AudioEngine callbacks
   useEffect(() => {
@@ -256,10 +240,10 @@ export function useStageState() {
 
   // Hydrate on initial mount or when currentSong changes
   useEffect(() => {
-    if (currentSong) {
+    if (currentSong && storageReady) {
       hydrateSongAudio(currentSong);
     }
-  }, [currentSongId]); // re-run only when changing song ID
+  }, [currentSongId, storageReady]); // re-run only when changing song ID or loading the profile
 
   // Setlist & Catalog navigation
   const handleSelectSong = useCallback((songId: string) => {
@@ -423,7 +407,25 @@ export function useStageState() {
     audioEngine.setMasterVolume(nextMuted ? 0 : masterVolume);
   }, [isMasterMuted, masterVolume]);
 
+  const applyProfile = (profile: Profile) => {
+    handleStop();
+    ++hydrateTokenRef.current;
+    audioEngine.clearTracks(true);
+    const importedSongs = profile.songs.map(song => ({ ...song, parsedLyrics: parseLyricsChordsLrc(song.lyricsChordsLrc) }));
+    setSongs(importedSongs);
+    setSetlists(profile.setlists);
+    setCurrentSongId(importedSongs[0]?.id || '');
+    setActiveSetlistId(profile.setlists[0]?.id || '');
+    setActiveAlert(null);
+    setVuMeters({});
+    setDuration(importedSongs[0]?.duration || 0);
+    // Import may keep the same song ID, so hydrate explicitly as well.
+    hydrateSongAudio(importedSongs[0] || null);
+  };
+
   return {
+    storageReady,
+    applyProfile,
     songs,
     setSongs,
     currentSong,
@@ -431,8 +433,6 @@ export function useStageState() {
     setlists,
     setSetlists,
     activeSetlist,
-    shows,
-    setShows,
     isPlaying,
     currentTime,
     duration,

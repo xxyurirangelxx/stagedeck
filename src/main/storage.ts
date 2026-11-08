@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 export class LocalStorageManager {
-  private dataDir: string;
+  public readonly dataDir: string;
 
   constructor() {
     try {

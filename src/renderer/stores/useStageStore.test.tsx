@@ -5,6 +5,42 @@ import { audioEngine } from '../audio/AudioEngine';
 import { audioStorage } from '../audio/audioStorage';
 import type { StemTrack } from '../../shared/types';
 
+describe('profile persistence', () => {
+  afterEach(() => { cleanup(); delete window.electronAPI; localStorage.clear(); });
+
+  it('waits for disk before writing and preserves an empty native profile', async () => {
+    let resolveSongs!: (songs: []) => void;
+    const pending = new Promise<[]>((resolve) => { resolveSongs = resolve; });
+    const writeStorage = vi.fn(async () => true);
+    window.electronAPI = {
+      readStorage: vi.fn((key: string) => key === 'songs' ? pending : Promise.resolve([])),
+      writeStorage,
+      getStageInfo: vi.fn(async () => ({ addresses: [], count: 0 })),
+      broadcastStage: vi.fn(async () => true)
+    } as unknown as NonNullable<Window['electronAPI']>;
+    const { result } = renderHook(() => useStageState());
+    expect(writeStorage).not.toHaveBeenCalled();
+    await act(async () => { resolveSongs([]); });
+    expect(result.current.storageReady).toBe(true);
+    expect(result.current.songs).toEqual([]);
+    expect(result.current.setlists).toEqual([]);
+    expect(writeStorage).toHaveBeenCalledWith('songs', []);
+  });
+
+  it('applies imported lyrics and channel settings even when the song ID stays the same', async () => {
+    const { result } = renderHook(() => useStageState());
+    const song = { ...result.current.songs[0], title: 'Imported', lyricsChordsLrc: '[00:01.00] C | Imported lyrics', stems: [] };
+    await act(async () => {
+      result.current.applyProfile({ format: 'stagedeck-profile', version: 1, songs: [song], setlists: [] });
+    });
+    expect(result.current.currentSong?.title).toBe('Imported');
+    expect(result.current.currentSong?.parsedLyrics?.[0].text).toBe('Imported lyrics');
+    expect(result.current.setlists).toEqual([]);
+    expect(result.current.isPlaying).toBe(false);
+    expect(JSON.parse(localStorage.getItem('stagedeck_songs')!)[0].title).toBe('Imported');
+  });
+});
+
 // O motor de áudio real depende de Web Audio/IndexedDB (indisponíveis no jsdom).
 // O mock abaixo replica fielmente o CONTRATO do motor real:
 // - com áudio carregado (state.audio > 0), a duração real manda e setSongDuration é ignorado;

@@ -59,17 +59,6 @@ export interface Setlist {
   updatedAt: number;
 }
 
-export interface Show {
-  id: string;
-  title: string;
-  date: string;
-  type: 'show' | 'rehearsal';
-  location?: string;
-  setlistId?: string;
-  notes?: string;
-  completed?: boolean;
-}
-
 export interface StageAlert {
   id: string;
   message: string;
@@ -91,4 +80,11 @@ export interface StageSyncPayload {
   } | null;
   nextSongTitle?: string;
   alert?: StageAlert | null;
+}
+
+export interface Profile {
+  format: 'stagedeck-profile';
+  version: 1;
+  songs: Song[];
+  setlists: Setlist[];
 }
